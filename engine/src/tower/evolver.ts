@@ -34,8 +34,9 @@ export class Evolver {
     const cycleId = `EV${Date.now().toString(36)}`;
     this.bus.emit('evolver.cycle.started', { cycleId, trigger });
     try {
-      // 1 · CAPTURE — worst performer from the transparency reports
-      const report = this.pickReport();
+      // 1 · CAPTURE — the worst performer by MEASURED fail rate (Q4 stats),
+      // among skills that have open failure evidence to replay against
+      const report = this.pickTarget();
       if (!report) {
         this.bus.emit('evolver.rejected', { cycleId, reason: 'no failure evidence to learn from — the system only evolves on real data' });
         this.bus.emit('evolver.cycle.completed', { cycleId, outcome: 'idle' });
@@ -120,13 +121,15 @@ export class Evolver {
         return 'incumbent-held';
       }
 
-      // 6 · PROMOTE — new versioned file, registry pointer flip, reversible
+      // 6 · PROMOTE — new versioned file, registry pointer flip, reversible.
+      // The promotion enters as a CANARY: live traffic confirms or reverts it.
       const row = this.registry.writeSkillVersion(skillName, candidates[best - 1], 'evolver');
       this.registry.data.stats.structuresEvolved++;
       this.registry.data.evolverLastOutcome =
-        `promoted ${skillName} v${row.version} (pass ${(scores[best] * 100).toFixed(0)}% vs incumbent ${(scores[0] * 100).toFixed(0)}%)`;
+        `promoted ${skillName} v${row.version} as canary (pass ${(scores[best] * 100).toFixed(0)}% vs incumbent ${(scores[0] * 100).toFixed(0)}%)`;
       this.registry.save();
       this.bus.emit('skill.updated', { name: skillName, version: row.version, by: 'evolver' });
+      this.bus.emit('skill.canary', { name: skillName, version: row.version, baselineFailRate: row.baselineFailRate });
       this.bus.emit('evolver.promoted', { cycleId, target: report.target, version: row.version });
       this.bus.emit('evolver.cycle.completed', { cycleId, outcome: 'promoted' });
       return 'promoted';
@@ -179,10 +182,17 @@ export class Evolver {
     }
   }
 
-  private pickReport(): ReportRow | null {
+  /** Capture target = highest measured fail rate among skills with open
+   *  replay evidence; sample count breaks ties and covers unmeasured skills. */
+  private pickTarget(): ReportRow | null {
     const open = this.registry.data.reports.filter(r => !r.consumedBy && r.samples.length > 0);
     if (open.length === 0) return null;
-    open.sort((a, b) => b.samples.length - a.samples.length);
+    const rateOf = (report: ReportRow): number => {
+      const skill = this.registry.data.skills.find(s => `skill:${s.name}` === report.target);
+      if (!skill || skill.attempts < 3) return 0;
+      return skill.failures / skill.attempts;
+    };
+    open.sort((a, b) => (rateOf(b) - rateOf(a)) || (b.samples.length - a.samples.length));
     return open[0];
   }
 

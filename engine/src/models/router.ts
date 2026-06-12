@@ -106,4 +106,28 @@ export class ModelRouter {
       maxTokens: resolved.maxTokens,
     });
   }
+
+  /** Recovery ladder (Q7): the next-stronger energy source than `current`,
+   *  or null if none exists. Strength order: demo < ollama < anthropic. */
+  async resolveStronger(profileName: string, currentProvider: string): Promise<ResolvedModel | null> {
+    const prof = this.profiles[profileName] ?? FALLBACK_PROFILE;
+    if (currentProvider !== 'anthropic' && await this.anthropic.available()) {
+      return {
+        provider: this.anthropic, providerName: 'anthropic',
+        model: (await this.anthropic.models())[0],
+        temperature: Math.min(prof.temperature, 0.3),   // escalations run cooler
+        maxTokens: prof.maxTokens,
+      };
+    }
+    if (currentProvider === 'demo' && this.ollamaUp && this.ollamaModels.length > 0) {
+      const hint = prof.ollamaHint.find(h => this.ollamaModels.some(m => m.includes(h)));
+      return {
+        provider: this.ollama, providerName: 'ollama',
+        model: hint ? this.ollamaModels.find(m => m.includes(hint))! : this.ollamaModels[0],
+        temperature: Math.min(prof.temperature, 0.3),
+        maxTokens: prof.maxTokens,
+      };
+    }
+    return null;
+  }
 }

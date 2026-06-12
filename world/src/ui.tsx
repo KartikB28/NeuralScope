@@ -296,20 +296,43 @@ export function SettingsModal({ st, onClose }: { st: WorldState; onClose: () => 
   const [conc, setConc] = useState(s?.concurrency ?? 3);
   const [evoN, setEvoN] = useState(s?.evolverEveryNObjectives ?? 5);
   const [allow, setAllow] = useState((s?.webAllowlist ?? []).join('\n'));
+  const [gdId, setGdId] = useState('');
+  const [gdSecret, setGdSecret] = useState('');
+  const [gradN, setGradN] = useState(s?.tierGraduationThreshold ?? 25);
+  const [circText, setCircText] = useState('');
+  const [circMin, setCircMin] = useState(60);
   const [saving, setSaving] = useState(false);
+  const circuits = st.snapshot?.circuits ?? [];
 
   const save = async () => {
     setSaving(true);
     const patch: Record<string, unknown> = {
       ollamaUrl, anthropicModel: model, concurrency: Number(conc),
       evolverEveryNObjectives: Number(evoN),
+      tierGraduationThreshold: Number(gradN) || 25,
       webAllowlist: allow.split('\n').map(x => x.trim()).filter(Boolean),
     };
     if (key.trim()) patch.anthropicApiKey = key.trim();
+    if (gdId.trim()) patch.gdocsClientId = gdId.trim();
+    if (gdSecret.trim()) patch.gdocsClientSecret = gdSecret.trim();
     await bridge.send('settings.update', { patch });
     setSaving(false);
-    setKey('');
+    setKey(''); setGdId(''); setGdSecret('');
     onClose();
+  };
+
+  const connectGdocs = async () => {
+    const res = await bridge.send('gdocs.connect');
+    if (res.ok && res.result?.authUrl) {
+      if (desktop.isDesktop) desktop.openExternal!(res.result.authUrl);
+      else window.open(res.result.authUrl, '_blank');
+    }
+  };
+
+  const addCircuit = async () => {
+    if (!circText.trim()) return;
+    const res = await bridge.send('circuit.schedule', { text: circText.trim(), env: 'main', everyMinutes: Number(circMin) || 60 });
+    if (res.ok) setCircText('');
   };
 
   return (
@@ -344,6 +367,42 @@ export function SettingsModal({ st, onClose }: { st: WorldState; onClose: () => 
 
       <label>WEB ALLOW-LIST (one domain per line — anything else raises an amber gate)</label>
       <textarea style={{ minHeight: 80 }} value={allow} onChange={e => setAllow(e.target.value)} />
+
+      <label>AUTONOMY GRADUATION · capability earns tier B after N consecutive clean approvals</label>
+      <input type="text" value={gradN} onChange={e => setGradN((e.target.value as any) | 0)} />
+      {(st.snapshot?.capabilities ?? []).length > 0 && (
+        <div className="note">
+          {(st.snapshot?.capabilities ?? []).map(c =>
+            `${c.capability}: tier ${c.tier} (${c.consecutiveApprovals} clean${c.denials ? `, ${c.denials} denied` : ''})`).join(' · ')}
+        </div>
+      )}
+
+      <label>GOOGLE DOCS · {s?.gdocsConnected ? 'connected ✓' : s?.hasGdocsCredentials ? 'credentials set — not connected' : 'not configured'}</label>
+      <div className="note" style={{ marginBottom: 6 }}>
+        Create a "Desktop app" OAuth client at console.cloud.google.com (Docs API enabled), paste it here, save, then Connect. Tokens live encrypted in the vault; writes are Tier B with pre-write snapshots; Testing-territory trials only ever touch a local mirror.
+      </div>
+      <input type="text" placeholder={s?.hasGdocsCredentials ? 'client id (saved — paste to replace)' : 'OAuth client id'} value={gdId} onChange={e => setGdId(e.target.value)} />
+      <div style={{ height: 6 }} />
+      <input type="password" placeholder={s?.hasGdocsCredentials ? 'client secret (saved — paste to replace)' : 'OAuth client secret'} value={gdSecret} onChange={e => setGdSecret(e.target.value)} />
+      <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+        <button className="good" disabled={!s?.hasGdocsCredentials} onClick={connectGdocs}>CONNECT GOOGLE DOCS ▸</button>
+        {s?.gdocsConnected && <button className="danger" onClick={() => bridge.send('settings.update', { patch: { gdocsDisconnect: true } })}>disconnect</button>}
+      </div>
+
+      <label>RECURRING CIRCUITS · the world never sleeps</label>
+      {circuits.map(c => (
+        <div key={c.id} className="skill-row" style={{ cursor: 'default' }}>
+          <span className="nm" style={{ fontSize: 11.5, flex: 1 }}>{c.text}</span>
+          <span className="vv">every {c.everyMinutes}min · ran {c.runs}×</span>
+          <button className="danger" style={{ padding: '2px 7px', fontSize: 10 }}
+            onClick={() => bridge.send('circuit.unschedule', { circuitId: c.id })}>remove</button>
+        </div>
+      ))}
+      <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+        <input type="text" style={{ flex: 1 }} placeholder="objective to repeat — e.g. summarize my notes folder" value={circText} onChange={e => setCircText(e.target.value)} />
+        <input type="text" style={{ width: 70 }} title="minutes" value={circMin} onChange={e => setCircMin((e.target.value as any) | 0)} />
+        <button className="good" onClick={addCircuit}>ADD</button>
+      </div>
 
       <label>DATA</label>
       <div className="note">
@@ -392,7 +451,10 @@ export function SkillsModal({ st, onClose }: { st: WorldState; onClose: () => vo
           <div key={s.name} className="skill-row" onClick={() => openSkill(s.name)}>
             <span className="nm">{s.name}</span>
             <span className="vv">v{s.version}</span>
-            <span className="by">edit ▸</span>
+            {s.status === 'canary' && <span className="chip paused">canary</span>}
+            <span className="by">
+              {s.attempts > 0 ? `${Math.round((1 - s.failures / s.attempts) * 100)}% pass · ` : ''}edit ▸
+            </span>
           </div>
         ))}
         <div className="foot"><button onClick={onClose}>close</button></div>

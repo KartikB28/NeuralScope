@@ -5,9 +5,27 @@
  */
 import { Provider, ModelRequest, ModelResponse } from './provider.js';
 
+// VRAM is the real concurrency budget on a local machine: bound parallel
+// generations so N workers never thrash one GPU (queue instead of stampede)
+const MAX_CONCURRENT = 2;
+
 export class OllamaProvider implements Provider {
   name = 'ollama' as const;
+  private inFlight = 0;
+  private queue: (() => void)[] = [];
+
   constructor(private getUrl: () => string) {}
+
+  private async acquire(): Promise<void> {
+    if (this.inFlight < MAX_CONCURRENT) { this.inFlight++; return; }
+    await new Promise<void>(r => this.queue.push(r));
+    this.inFlight++;
+  }
+
+  private release(): void {
+    this.inFlight--;
+    this.queue.shift()?.();
+  }
 
   async available(): Promise<boolean> {
     try {
@@ -26,6 +44,15 @@ export class OllamaProvider implements Provider {
   }
 
   async call(model: string, req: ModelRequest): Promise<ModelResponse> {
+    await this.acquire();
+    try {
+      return await this.doCall(model, req);
+    } finally {
+      this.release();
+    }
+  }
+
+  private async doCall(model: string, req: ModelRequest): Promise<ModelResponse> {
     const t0 = Date.now();
     const body = {
       model,

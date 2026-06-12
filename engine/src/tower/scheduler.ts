@@ -24,6 +24,11 @@ export class Scheduler {
   private active = new Set<string>();
   private loopDone = new Map<string, Promise<void>>();
   onObjectiveSettled: (obj: ObjectiveState) => void = () => {};
+  /** Recovery ladder, last rung (Q7): the Tower may split an exhausted step
+   *  into smaller steps (returns the new step ids, mutating the plan in
+   *  place) — or null to let the objective fail. */
+  onStepExhausted: (obj: ObjectiveState, plan: Plan, step: PlanStep) => Promise<string[] | null> =
+    async () => null;
 
   /** True while an execute() loop owns this objective. */
   isActive(objectiveId: string): boolean { return this.active.has(objectiveId); }
@@ -165,10 +170,31 @@ export class Scheduler {
         }
 
         const states = plan.steps.map(s => obj.steps[s.id]);
-        if (states.some(s => s.status === 'failed')) {
-          // a failed step fails the objective unless unreachable branches remain
+        const failedState = states.find(s => s.status === 'failed');
+        if (failedState) {
+          if (inFlight.size > 0) {
+            // let siblings land before deciding the objective's fate
+            await Promise.race([...inFlight.values(), sleep(120)]);
+            continue;
+          }
+          const failedStep = plan.steps.find(s => s.id === failedState.id)!;
+          if (!obj.redecomposed) {
+            obj.redecomposed = true;
+            const into = await this.onStepExhausted(obj, plan, failedStep);
+            if (into && into.length > 0) {
+              // the plan was rewired in place: fresh states for the new steps
+              delete obj.steps[failedStep.id];
+              for (const id of into) {
+                obj.steps[id] = { id, status: 'pending', attempts: 0, reboots: 0, summary: '', failures: [] };
+              }
+              this.registry.save();
+              this.bus.emit('step.decomposed', { stepId: failedStep.id, into }, meta);
+              this.bus.emit('plan.compiled', { plan }, meta);   // the circuit regrows
+              continue;
+            }
+          }
           obj.status = 'failed';
-          obj.error = states.find(s => s.status === 'failed')?.summary;
+          obj.error = failedState.summary;
           break;
         }
         if (states.every(s => s.status === 'completed')) {

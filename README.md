@@ -98,7 +98,13 @@ npm run smoke      # end-to-end proof: plan → fail → retry → deliver → e
 
 Every action emits one contract-validated event (`definitions/schema/events.v1.json`,
 frozen); the World maps each event to one animation. Five layers, and no layer
-ever skips a layer.
+ever skips a layer — enforced by a build-time checker, not convention.
+
+The eight load-bearing systems (content-addressed blobs, canary evolution
+with auto-rollback, the autonomy graduation ledger, stats-steered capture,
+the enforced layer law, the Google Docs gate, the small-model recovery
+ladder, recurring circuits) are documented system-by-system — with how the
+smoke test proves each — in [`docs/eight-systems.md`](docs/eight-systems.md).
 
 **Everything is a file you can read.** Skills are markdown in
 `~/.neuralscope/definitions/skills/` (edit them live — in the app or any

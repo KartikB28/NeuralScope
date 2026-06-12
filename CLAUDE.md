@@ -56,19 +56,26 @@ swap-in later is mechanical, not architectural.
 ```
 engine/src/contract.ts        the frozen event/command contract + shared types
 engine/src/bus.ts             validate → events.jsonl → fan out
-engine/src/registry.ts        registry rows + skill versioning + Vault
-engine/src/server.ts          ws bridge + static world + read-only inspector APIs
-engine/src/tower/             tower.ts (boot/commands/snapshot) · compiler.ts ·
-                              scheduler.ts (DAG + governor) · security.ts ·
-                              transparency.ts · memory.ts · evolver.ts
-engine/src/runtime/           worker.ts (the scaffold loop) · validators.ts
-engine/src/connectors/        filesystem.ts (workspace-scoped) · web.ts (GET+allowlist)
-engine/src/models/            demo.ts · ollama.ts · anthropic.ts · router.ts (profiles)
+engine/src/registry.ts        registry rows · skill versioning + CANARY lifecycle ·
+                              BlobStore (content-addressed) · Vault
+engine/src/server.ts          ws bridge + static world + read-only APIs (/api/blob, /api/trace…)
+engine/src/tower/             tower.ts (boot/commands/snapshot/recurring circuits) ·
+                              compiler.ts (+redecompose) · scheduler.ts (DAG + governor +
+                              step-exhausted hook) · security.ts (rings/tiers/kill +
+                              graduation ledger) · transparency.ts · memory.ts · evolver.ts
+engine/src/runtime/           worker.ts (scaffold + recovery ladder) · validators.ts ·
+                              ports.ts (the ONLY way runtime sees the tower)
+engine/src/connectors/        filesystem.ts (workspace-scoped) · web.ts (GET+allowlist) ·
+                              gdocs.ts (loopback OAuth · mirrors · pre-write snapshots)
+engine/src/models/            demo.ts · ollama.ts (bounded concurrency) · anthropic.ts ·
+                              router.ts (profiles + resolveStronger escalation)
 world/src/                    bridge.ts (store) · scene.ts (3D) · ui.tsx · App.tsx
 desktop/                      main.ts (boots engine in-process) · preload.ts
 definitions/                  skills/ profiles/ connectors/ schema/ — factory
                               defaults, seeded to ~/.neuralscope on first boot
-scripts/                      build.mjs · smoke.mjs (e2e proof) · make-icon.mjs
+scripts/                      build.mjs · smoke.mjs (e2e proof) · make-icon.mjs ·
+                              check-layers.mjs (layer rule = build law)
+docs/eight-systems.md         Q1–Q8 → modules → how smoke proves each
 ```
 
 ## Commands
@@ -103,8 +110,16 @@ npm run dist        # installers for the current OS → release/
 
 ## State of play / near-term roadmap
 
-Done (v0.1): everything above. Next, in blueprint order: recurring circuits
-(cron-like watchers) · Google Docs connector via OAuth (mocked in Testing) ·
-sandboxed code execution for validators (Node permission model; ships OFF) ·
-tier graduation ledger (C→B on clean records) · SQLite registry swap ·
-embodiment cluster behind its Phase-3 review.
+Done (v0.1): the vertical slice. Done (v0.2 — "the eight systems"): blob
+store · canary promotions with auto-rollback · graduation ledger (C→B
+earned) · per-skill stats steering evolver capture · runtime ports +
+enforced layer checker · Google Docs connector (loopback OAuth, mirrors,
+pre-write snapshots, Testing mock) · recovery ladder (critic, escalation,
+re-decomposition) · recurring circuits · untrusted-content envelopes ·
+Ollama concurrency budget. See `docs/eight-systems.md`; all proven by
+`npm run smoke` in one adversarial scenario.
+
+Next, in blueprint order: browser-automation connector · sandboxed code
+execution for validators (Node permission model; ships OFF) · tier demotion
+on post-graduation reversals · SQLite registry swap · embodiment cluster
+behind its Phase-3 review.

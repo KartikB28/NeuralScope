@@ -37,6 +37,8 @@ type SceneListener = (e: NsEvent) => void;
 const SNAPSHOT_REFRESH_ON = new Set([
   'objective.completed', 'objective.failed', 'objective.cancelled', 'skill.updated',
   'settings.updated', 'evolver.cycle.completed', 'memory.decayed', 'engine.ready',
+  'skill.canary', 'skill.rolledback', 'capability.graduated',
+  'circuit.scheduled', 'circuit.unscheduled', 'connector.added',
 ]);
 
 export class Bridge {
@@ -158,6 +160,18 @@ export class Bridge {
       case 'governor.alert':
         this.toast({ title: `Governor: ${e.data.kind}`, body: String(e.data.detail ?? ''), tone: 'warn' });
         break;
+      case 'skill.rolledback':
+        this.toast({
+          title: 'Canary rolled back', tone: 'warn',
+          body: `${e.data.name} v${e.data.fromVersion} regressed on live traffic — reverted to v${e.data.toVersion} automatically.`,
+        });
+        break;
+      case 'capability.graduated':
+        this.toast({
+          title: 'Autonomy earned', tone: 'good',
+          body: `${e.data.capability} graduated C → B after ${e.data.approvals} clean approvals. It now executes with notification instead of a gate.`,
+        });
+        break;
       case 'evolver.cycle.started': evolverPhase = 'cycle starting'; break;
       case 'evolver.captured': evolverPhase = `captured ${e.data.target}`; break;
       case 'evolver.decomposed': evolverPhase = `replaying ${e.data.replayCount} recorded failures`; break;
@@ -211,13 +225,18 @@ export class Bridge {
     };
 
     switch (e.type) {
-      case 'plan.compiled':
+      case 'plan.compiled': {
         obj.plan = (e.data as any).plan;
         obj.status = 'running';
+        const valid = new Set(obj.plan!.steps.map(s => s.id));
+        for (const id of Object.keys(obj.steps)) {
+          if (!valid.has(id)) delete obj.steps[id];   // re-decomposed steps vanish
+        }
         for (const s of obj.plan!.steps) {
           if (!obj.steps[s.id]) obj.steps[s.id] = { id: s.id, status: 'pending', attempts: 0, reboots: 0, summary: '', failures: [] };
         }
         break;
+      }
       case 'step.ready': touchStep(e.stepId, s => { s.status = 'ready'; }); break;
       case 'step.started': touchStep(e.stepId, s => { s.status = 'running'; s.startedAt = e.ts; }); break;
       case 'worker.booted': touchStep(e.stepId, s => { s.model = String((e.data as any).model); s.profile = String((e.data as any).profile); }); break;
@@ -269,6 +288,14 @@ export class Bridge {
       case 'evolver.cycle.started': return mk(`the evolver wakes (${short(e.data.trigger, 30)})`, 'info');
       case 'evolver.promoted': return mk(`★ EVOLVED: ${short(e.data.target, 30)} → v${e.data.version}`, 'good');
       case 'governor.alert': return mk(`governor: ${short(e.data.detail, 56)}`, 'warn');
+      case 'skill.canary': return mk(`canary: ${e.data.name} v${e.data.version} on probation — live traffic decides`, 'warn');
+      case 'skill.rolledback': return mk(`⏪ ROLLED BACK: ${e.data.name} v${e.data.fromVersion} → v${e.data.toVersion} (regressed)`, 'bad');
+      case 'capability.graduated': return mk(`★ autonomy earned: ${e.data.capability} graduated C → B after ${e.data.approvals} clean approvals`, 'good');
+      case 'worker.escalated': return mk(`⇧ escalated ${e.stepId}: ${short(e.data.to, 36)} takes over`, 'warn');
+      case 'critic.flagged': return mk(`critic on ${e.stepId}: ${short((e.data.issues as string[])?.[0], 48)}`, 'warn');
+      case 'step.decomposed': return mk(`step ${e.stepId} split into ${(e.data.into as string[])?.length} smaller steps`, 'warn');
+      case 'circuit.scheduled': return mk(`recurring circuit armed: every ${e.data.everyMinutes}min — ${short(e.data.text, 40)}`, 'info');
+      case 'circuit.unscheduled': return mk('recurring circuit removed', 'info');
       default: return null;
     }
   }

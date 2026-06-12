@@ -67,7 +67,15 @@
     "connector.down": "{name, reason} · world: gate turns red",
     "skill.updated": "{name, version, by} · world: skill slab glints (green=evolver, white=user)",
     "profile.updated": "{name} · world: routing table glint",
-    "settings.updated": "{keys[]} · world: settings toast (values never broadcast)"
+    "settings.updated": "{keys[]} · world: settings toast (values never broadcast)",
+    "skill.canary": "{name, version, baselineFailRate} · world: skill slab pulses amber-green — promoted on probation",
+    "skill.rolledback": "{name, fromVersion, toVersion, reason} · world: red glint — a regression was caught and reverted",
+    "capability.graduated": "{capability, from, to, approvals} · world: gate dissolves into the shell — autonomy earned with receipts",
+    "worker.escalated": "{stepId, from, to} · world: sphere reignites brighter — recovery ladder reached for a stronger model",
+    "critic.flagged": "{stepId, issues[]} · world: brief violet flash — adversarial review fed back before retry",
+    "step.decomposed": "{stepId, into[]} · world: node splits, circuit regrows — a too-big step became smaller steps",
+    "circuit.scheduled": "{circuitId, text, env, everyMinutes, nextRunAt} · world: faint orbit ring marks a recurring circuit",
+    "circuit.unscheduled": "{circuitId} · world: orbit ring fades"
   },
   "commands": {
     "objective.create": "{text, env}",
@@ -82,6 +90,9 @@
     "evolver.run": "{}",
     "system.kill": "{}",
     "system.resume": "{}",
-    "snapshot.request": "{}"
+    "snapshot.request": "{}",
+    "circuit.schedule": "{text, env, everyMinutes} — register a recurring circuit",
+    "circuit.unschedule": "{circuitId}",
+    "gdocs.connect": "{} → {authUrl} — begin Google OAuth (loopback); errors if no client credentials configured"
   }
 }

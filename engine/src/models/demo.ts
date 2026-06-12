@@ -22,7 +22,7 @@ function titleCase(s: string): string {
 
 /** Pull a short human subject out of the objective text. */
 function subjectOf(text: string): string {
-  const cleaned = text.replace(/\[demo-fail\]/gi, '').replace(/https?:\/\/\S+/g, '').trim();
+  const cleaned = text.replace(/\[demo-fail(?:-hard|-always)?\]/gi, '').replace(/https?:\/\/\S+/g, '').trim();
   const m = /(?:for|about|on|called|named)\s+(?:an?\s+|the\s+)?([\w'&\- ]{3,48})/i.exec(cleaned);
   if (m) return titleCase(m[1].trim().replace(/[.!?,;:]+$/, ''));
   const words = cleaned.split(/\s+/).filter(w => w.length > 2).slice(0, 5);
@@ -33,6 +33,14 @@ type Kind = 'site' | 'report';
 function kindOf(text: string): Kind {
   if (/\b(site|website|web ?page|landing|portfolio|homepage|shop|store)\b/i.test(text)) return 'site';
   return 'report';
+}
+
+/** The failure dials must be read from the OBJECTIVE alone — worker prompts
+ *  also quote success criteria, which may legitimately mention the markers
+ *  ("no [demo-fail] placeholder remains") without meaning to arm them. */
+function objectiveLine(user: string): string {
+  const m = /^ORIGINAL OBJECTIVE:\s*(.*)$/m.exec(user);
+  return m ? m[1] : user;
 }
 
 export class DemoProvider implements Provider {
@@ -58,6 +66,7 @@ export class DemoProvider implements Provider {
       case 'writer': return this.write(req);
       case 'coder': return this.code(req);
       case 'validator': return this.validate(req);
+      case 'critic': return this.critique(req);
       case 'evolver-mutate': return this.mutate(req);
       case 'summarizer': return this.summarize(req);
       default: return JSON.stringify({ note: `demo-engine has no template for role "${req.role}"` });
@@ -66,12 +75,28 @@ export class DemoProvider implements Provider {
 
   // ---- planner: objective text → task graph ------------------------------
   private plan(req: ModelRequest): string {
+    // recovery ladder, last rung: split a failed step into smaller steps
+    if (/REDECOMPOSE/i.test(req.user)) {
+      return JSON.stringify({
+        steps: [
+          { id: 'R1', task: '(recovery 1/2) Build index.html only — complete markup, every section present, nothing left unfinished',
+            worker: 'coder', skills: ['frontend'], connectors: ['filesystem'], depends_on: [] },
+          { id: 'R2', task: '(recovery 2/2) Build styles.css and verify index.html links it',
+            worker: 'coder', skills: ['frontend'], connectors: ['filesystem'], depends_on: ['R1'] },
+        ],
+      });
+    }
     const objective = req.user;
     const kind = kindOf(objective);
     const subject = subjectOf(objective);
+    // only quote the marker in a criterion when the objective actually
+    // carries one — criteria text travels into every downstream prompt
+    const markerCriterion = /\[demo-fail/i.test(objective)
+      ? 'no [demo-fail] placeholder remains'
+      : 'no placeholder text remains';
     const criteria = kind === 'site'
       ? ['index.html exists', 'styles.css exists and is linked', 'page has an <h1>',
-         'page has at least 4 sections', 'no [demo-fail] placeholder remains']
+         'page has at least 4 sections', markerCriterion]
       : ['report.md exists', 'report has a title heading', 'report has at least 3 sections',
          'report cites the gathered notes'];
     const buildTask = kind === 'site'
@@ -99,7 +124,7 @@ export class DemoProvider implements Provider {
 
   // ---- researcher --------------------------------------------------------
   private research(req: ModelRequest): string {
-    const subject = subjectOf(req.user);
+    const subject = subjectOf(objectiveLine(req.user));
     const seed = hash(req.user);
     const angles = [
       `${subject} should lead with one clear promise — visitors decide in under five seconds.`,
@@ -117,8 +142,8 @@ export class DemoProvider implements Provider {
 
   // ---- writer ------------------------------------------------------------
   private write(req: ModelRequest): string {
-    const subject = subjectOf(req.user);
-    const kind = kindOf(req.user);
+    const subject = subjectOf(objectiveLine(req.user));
+    const kind = kindOf(objectiveLine(req.user));
     if (kind === 'site') {
       return JSON.stringify({
         sections: [
@@ -159,9 +184,18 @@ export class DemoProvider implements Provider {
       });
     }
 
-    const subject = subjectOf(req.user);
-    const kind = kindOf(req.user);
-    const demoFail = /\[demo-fail\]/i.test(req.user) && req.attempt <= 1;
+    const objective = objectiveLine(req.user);
+    const subject = subjectOf(objective);
+    const kind = kindOf(objective);
+    // failure dials, so every recovery rung can be proven offline:
+    //   [demo-fail]        first attempt broken, retry fixes it
+    //   [demo-fail-hard]   every attempt broken UNTIL the step is re-decomposed
+    //   [demo-fail-always] broken no matter what (exercises canary rollback)
+    const recoveryTask = /\(recovery \d/.test(req.user);
+    const demoFail =
+      /\[demo-fail-always\]/i.test(objective) ||
+      (/\[demo-fail-hard\]/i.test(objective) && !recoveryTask) ||
+      (/\[demo-fail\]/i.test(objective) && req.attempt <= 1);
 
     // pull sections written by the writer out of the handoff context
     let sections: { title: string; content: string }[] = [];
@@ -245,6 +279,16 @@ footer { padding-top: 36px; font-size: 13px; color: #8a8474; font-family: system
     return JSON.stringify({ pass: true, checks: [{ name: 'demo-validator', ok: true }], verdict: 'No deterministic findings supplied; defaulting to pass.' });
   }
 
+  // ---- critic: adversarial review between failed attempts -----------------
+  private critique(req: ModelRequest): string {
+    const m = /PREVIOUS ATTEMPT FAILED VALIDATION:\s*\n?([^\n]+)/.exec(req.user);
+    const reasons = (m?.[1] ?? '').split(';').map(s => s.trim()).filter(Boolean).slice(0, 4);
+    const issues = reasons.length
+      ? reasons.map(r => `Fix verbatim: ${r}`)
+      : ['Re-check every success criterion against your own output before answering.'];
+    return JSON.stringify({ issues });
+  }
+
   // ---- evolver mutation --------------------------------------------------
   private mutate(req: ModelRequest): string {
     const skillMatch = /CURRENT SKILL:\n([\s\S]*?)\nFAILURE EVIDENCE:/.exec(req.user);
@@ -258,7 +302,7 @@ footer { padding-top: 36px; font-size: 13px; color: #8a8474; font-family: system
 
   // ---- summarizer (memory) -----------------------------------------------
   private summarize(req: ModelRequest): string {
-    const subject = subjectOf(req.user);
+    const subject = subjectOf(objectiveLine(req.user));
     const failed = /failed|failure/i.test(req.user) ? ' Validation failed at least once before passing.' : '';
     return JSON.stringify({ summary: `Delivered "${subject}" end-to-end.${failed} Pattern: research → copy → build → validate held up.`, tags: subject.toLowerCase().split(/\s+/).slice(0, 4) });
   }

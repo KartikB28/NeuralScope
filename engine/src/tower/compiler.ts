@@ -4,13 +4,13 @@
  * The output is sanitized hard: the model proposes, deterministic code
  * disposes. The compiled JSON literally IS the circuit drawn in the World.
  */
-import { EnvName, Plan, PlanStep } from '../contract.js';
+import { EnvName, ObjectiveState, Plan, PlanStep } from '../contract.js';
 import { ModelRouter } from '../models/router.js';
 import { extractJson } from '../runtime/validators.js';
 import { MemoryStore } from './memory.js';
 
 const KNOWN_WORKERS = new Set(['researcher', 'writer', 'coder', 'validator']);
-const KNOWN_CONNECTORS = new Set(['filesystem', 'web']);
+const KNOWN_CONNECTORS = new Set(['filesystem', 'web', 'gdocs']);
 const SKILL_FOR: Record<string, string[]> = {
   researcher: ['web-research'],
   writer: ['copywriting'],
@@ -57,6 +57,66 @@ export class ObjectiveCompiler {
     const raw = extractJson(res.text) as Partial<Plan> | null;
     const plan = this.sanitize(objectiveId, text, env, raw);
     return { plan, providerName: resolved.providerName };
+  }
+
+  /** Recovery ladder, last rung (Q7): split an exhausted step into 2–3
+   *  smaller steps. Mutates the plan in place; returns the new step ids,
+   *  or null if no usable decomposition came back. */
+  async redecompose(obj: ObjectiveState, plan: Plan, failed: PlanStep, signal?: AbortSignal): Promise<string[] | null> {
+    const failures = (obj.steps[failed.id]?.failures ?? []).slice(-5);
+    const resolved = await this.router.resolve('planner');
+    let rawSteps: Partial<PlanStep>[] = [];
+    try {
+      const res = await this.router.call(resolved, {
+        role: 'planner',
+        system: 'A step in a work plan keeps failing. REDECOMPOSE it into 2-3 smaller, more focused steps for the SAME worker type. Respond with ONLY JSON: {"steps":[{"id":"R1","task":"...","worker":"...","skills":[...],"connectors":[...],"depends_on":[]}]}. Make each sub-task narrow enough that it cannot fail the same way.',
+        user: `REDECOMPOSE step\nOBJECTIVE: ${obj.text}\nFAILED STEP (${failed.id}): ${failed.task}\nWORKER: ${failed.worker}\nWHY IT KEPT FAILING:\n${failures.map(f => `- ${f}`).join('\n')}`,
+        wantJson: true, attempt: 1, signal,
+      });
+      obj.modelCalls++;
+      const parsed = extractJson(res.text) as { steps?: Partial<PlanStep>[] } | null;
+      rawSteps = Array.isArray(parsed?.steps) ? parsed!.steps : [];
+    } catch { rawSteps = []; }
+
+    let subs = rawSteps
+      .filter(s => typeof s?.task === 'string' && s.task.length > 4)
+      .slice(0, 3);
+    if (subs.length < 2) {
+      // deterministic fallback split — narrower halves of the same task
+      subs = [
+        { task: `(recovery 1/2) ${failed.task} — produce the primary deliverable file only, complete and final` },
+        { task: `(recovery 2/2) ${failed.task} — produce the remaining files and wire everything together` },
+      ];
+    }
+
+    const idMap = new Map<string, string>();
+    subs.forEach((s, i) => idMap.set(String(s.id ?? `R${i + 1}`), `${failed.id}r${i + 1}`));
+    const newSteps: PlanStep[] = subs.map((s, i) => {
+      const deps = (Array.isArray(s.depends_on) ? s.depends_on.map(String) : [])
+        .map(d => idMap.get(d))
+        .filter((d): d is string => Boolean(d));
+      return {
+        id: `${failed.id}r${i + 1}`,
+        task: String(s.task).slice(0, 500),
+        worker: KNOWN_WORKERS.has(String(s.worker)) ? String(s.worker) : failed.worker,
+        skills: Array.isArray(s.skills) && s.skills.length ? s.skills.filter(k => typeof k === 'string').slice(0, 3) : failed.skills,
+        connectors: Array.isArray(s.connectors)
+          ? s.connectors.filter(c => KNOWN_CONNECTORS.has(String(c)))
+          : [...failed.connectors],
+        depends_on: deps.length ? deps : (i === 0 ? [...failed.depends_on] : [`${failed.id}r${i}`]),
+      };
+    });
+    // structural guarantee: the chain starts where the failed step started
+    newSteps[0].depends_on = [...failed.depends_on];
+
+    const at = plan.steps.findIndex(s => s.id === failed.id);
+    if (at < 0) return null;
+    plan.steps.splice(at, 1, ...newSteps);
+    const lastId = newSteps[newSteps.length - 1].id;
+    for (const s of plan.steps) {
+      s.depends_on = s.depends_on.map(d => (d === failed.id ? lastId : d));
+    }
+    return newSteps.map(s => s.id);
   }
 
   /** Never trust a plan as-emitted. Coerce it into a valid, safe graph. */

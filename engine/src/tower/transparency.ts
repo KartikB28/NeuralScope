@@ -15,6 +15,9 @@ export interface TraceEntry {
   stepId?: string;
   kind: 'prompt' | 'response' | 'validation' | 'tool' | 'decision' | 'note';
   content: unknown;
+  /** name → content hash: full payloads live in the blob store (Q1),
+   *  retrievable via /api/blob/:hash — traces stay light, nothing is lost */
+  blobs?: Record<string, string>;
 }
 
 interface FailureSample { skill: string; profile: string; stepTask: string; reasons: string[] }

@@ -9,7 +9,7 @@
   "private": true,
   "scripts": {
     "build": "node scripts/build.mjs",
-    "typecheck": "tsc -p engine/tsconfig.json --noEmit && tsc -p desktop/tsconfig.json --noEmit && tsc -p world/tsconfig.json --noEmit",
+    "typecheck": "tsc -p engine/tsconfig.json --noEmit && tsc -p desktop/tsconfig.json --noEmit && tsc -p world/tsconfig.json --noEmit && node scripts/check-layers.mjs",
     "engine": "node dist/engine/index.cjs",
     "dev:world": "vite world",
     "app": "electron .",

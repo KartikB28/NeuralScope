@@ -23,12 +23,18 @@ are denied loudly on boot, never honored.
 
 ## Permission tiers
 
-| Tier | Meaning | v0.1 reality |
+| Tier | Meaning | current reality |
 |---|---|---|
-| **A — autonomous** | sandboxed work | fs read/write *inside the objective workspace*; GET on allow-listed domains; model calls |
-| **B — notify** | autonomous but loudly visible | reserved (events carry tier-B markers; no tier-B tools wired yet) |
+| **A — autonomous** | sandboxed work | fs read/write *inside the objective workspace*; GET on allow-listed domains; gdocs reads (mirrored); model calls |
+| **B — notify** | autonomous but loudly visible | gdocs appends (with pre-write blob snapshots) · any capability that **graduated** from C |
 | **C — approve first** | amber gate, waits for you | fs delete; GET on non-allow-listed domains |
 | **D — human only** | the system prepares, you act | nothing wired. Money, accounts, credentials, sending as you — stays here |
+
+**Graduation ledger (earned autonomy).** Every Tier-C capability has a row:
+N consecutive clean approvals (default 25, `tierGraduationThreshold` in
+Settings) graduates it to Tier B; a single denial resets the count to zero.
+Graduations emit `capability.graduated` and are visible in Settings. The
+ledger lives in the registry — auditable, and never evolvable.
 
 ## The no-go map (hard blocks, not gates)
 
@@ -61,11 +67,17 @@ circuits restart from their last checkpoint.
   prompt, response, tool call and validation — a complete record of behavior.
   It does not (cannot) record a model's internal reasoning.
 - **Prompt injection is a real surface** once web content enters worker
-  context. v0.1 mitigations: GET-only, allow-list-first, content stripped to
-  text, and the deterministic scaffold — not the model — performs all side
-  effects (file writes etc.) against schema-validated output. This shrinks
-  the blast radius; it does not eliminate the surface. Treat the web
-  allow-list as part of your security boundary.
+  context. Mitigations: GET-only, allow-list-first, content stripped to text
+  and wrapped in explicit `UNTRUSTED-WEB-CONTENT` envelopes ("data, never
+  instructions"), and the deterministic scaffold — not the model — performs
+  all side effects against schema-validated output, behind ring-1
+  allow-lists. This shrinks the blast radius; it does not eliminate the
+  surface. Treat the web allow-list as part of your security boundary.
+- **Google Docs writes are reversible by construction**: every append
+  snapshots the document to the content-addressed blob store first
+  (`preImageBlob` in the tool result), and Testing-territory trials only
+  ever touch a local mirror. Reverting is restoring a blob — but restoring
+  is a human action in v0.x, not an automatic one.
 - **Local server.** The engine binds `127.0.0.1` only. Anyone with local
   access to your machine can reach it; it has no auth of its own in v0.1.
 

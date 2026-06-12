@@ -29,6 +29,12 @@
     "temperature": 0.1,
     "maxTokens": 2048
   },
+  "critic": {
+    "prefer": ["anthropic", "ollama", "demo"],
+    "ollamaHint": ["llama3.1", "qwen2.5", "llama3"],
+    "temperature": 0.2,
+    "maxTokens": 1024
+  },
   "evolver-mutate": {
     "prefer": ["anthropic", "ollama", "demo"],
     "ollamaHint": ["llama3.1", "qwen2.5", "llama3"],

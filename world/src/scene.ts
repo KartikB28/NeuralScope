@@ -262,9 +262,19 @@ export class WorldScene {
     this.growPlan(cv, obj);
   }
 
-  /** plan.compiled — the task graph IS the circuit. */
+  /** plan.compiled — the task graph IS the circuit. Re-entrant: a
+   *  re-decomposed plan clears the old growth and regrows in place. */
   private growPlan(cv: CircuitView, obj: ObjectiveState): void {
     if (cv.seed) { cv.group.remove(cv.seed); this.unpick(cv.seed); cv.seed = null; }
+    for (const mesh of cv.nodeByStep.values()) this.unpick(mesh);
+    if (cv.frame) this.unpick(cv.frame);
+    for (const g of cv.gateNodes.values()) this.unpick(g);
+    cv.group.clear();
+    cv.nodeByStep.clear();
+    cv.edges = [];
+    cv.gateNodes.clear();
+    cv.frame = null;
+    cv.orbiter = null;
     const plan = obj.plan!;
     const rng = mulberry(hash(obj.id));
 

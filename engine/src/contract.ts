@@ -70,7 +70,16 @@ export type EventType =
   | 'skill.updated'           // { name, version, by }
   | 'profile.updated'         // { name }
   | 'settings.updated'        // { keys } — values never broadcast (secrets)
-  | 'engine.snapshot';        // { snapshot } — full world state on WS connect
+  | 'engine.snapshot'         // { snapshot } — full world state on WS connect
+  // v1 additive (the eight systems, completed)
+  | 'skill.canary'            // { name, version, baselineFailRate } — promoted, on probation
+  | 'skill.rolledback'        // { name, fromVersion, toVersion, reason } — canary regressed
+  | 'capability.graduated'    // { capability, from, to, approvals } — autonomy earned (C→B)
+  | 'worker.escalated'        // { stepId, from, to } — recovery ladder: stronger model
+  | 'critic.flagged'          // { stepId, issues } — adversarial review before retry
+  | 'step.decomposed'         // { stepId, into } — failed step split into smaller steps
+  | 'circuit.scheduled'       // { circuitId, text, env, everyMinutes, nextRunAt }
+  | 'circuit.unscheduled';    // { circuitId }
 
 export interface NsEvent {
   v: number;            // schema version
@@ -98,7 +107,11 @@ export type CommandType =
   | 'evolver.run'        // {}
   | 'system.kill'        // {}
   | 'system.resume'      // {}
-  | 'snapshot.request';  // {}
+  | 'snapshot.request'   // {}
+  // v1 additive
+  | 'circuit.schedule'   // { text, env, everyMinutes } — recurring circuit
+  | 'circuit.unschedule' // { circuitId }
+  | 'gdocs.connect';     // {} → { authUrl } — begin loopback OAuth, or error if unconfigured
 
 export interface NsCommand {
   v: number;
@@ -122,12 +135,15 @@ const EVENT_TYPES: ReadonlySet<string> = new Set<string>([
   'evolver.trial', 'evolver.scored', 'evolver.promoted', 'evolver.rejected', 'evolver.cycle.completed',
   'connector.added', 'connector.down', 'skill.updated', 'profile.updated', 'settings.updated',
   'engine.snapshot',
+  'skill.canary', 'skill.rolledback', 'capability.graduated', 'worker.escalated',
+  'critic.flagged', 'step.decomposed', 'circuit.scheduled', 'circuit.unscheduled',
 ]);
 
 const COMMAND_TYPES: ReadonlySet<string> = new Set<string>([
   'objective.create', 'objective.cancel', 'circuit.pause', 'circuit.resume',
   'gate.approve', 'gate.deny', 'skill.edit', 'settings.update', 'memory.inject',
   'evolver.run', 'system.kill', 'system.resume', 'snapshot.request',
+  'circuit.schedule', 'circuit.unschedule', 'gdocs.connect',
 ]);
 
 export function isValidEventType(t: string): t is EventType { return EVENT_TYPES.has(t); }
@@ -186,6 +202,8 @@ export interface StepState {
   startedAt?: number;
   endedAt?: number;
   outputPreview?: string;
+  outputBlob?: string;        // content hash of the full step output (Q1)
+  escalatedTo?: string;       // provider/model after a recovery-ladder escalation
 }
 
 export interface ObjectiveState {
@@ -202,6 +220,8 @@ export interface ObjectiveState {
   estCostUSD: number;
   deliverables: string[];
   error?: string;
+  /** recovery ladder, last rung: a failed step may be re-decomposed once */
+  redecomposed?: boolean;
 }
 
 export interface GateRequest {
@@ -215,6 +235,25 @@ export interface GateRequest {
   status: 'waiting' | 'approved' | 'denied';
 }
 
+export interface RecurringCircuit {
+  id: string;
+  text: string;
+  env: EnvName;
+  everyMinutes: number;
+  enabled: boolean;
+  nextRunAt: number;
+  lastObjectiveId?: string;
+  runs: number;
+}
+
+export interface CapabilityLedgerRow {
+  capability: string;          // e.g. "web.fetch:offsite"
+  tier: 'B' | 'C';             // current effective tier
+  consecutiveApprovals: number;
+  denials: number;
+  graduatedAt?: number;
+}
+
 /** Full state pushed to a World client on connect. */
 export interface Snapshot {
   schemaVersion: number;
@@ -224,10 +263,15 @@ export interface Snapshot {
   providers: { name: string; ok: boolean; models: string[]; active: boolean }[];
   objectives: ObjectiveState[];
   gates: GateRequest[];
-  skills: { name: string; version: number; updatedAt: number; preview: string }[];
+  skills: {
+    name: string; version: number; updatedAt: number; preview: string;
+    status: 'stable' | 'canary'; attempts: number; failures: number;
+  }[];
   memory: { id: string; summary: string; tags: string[]; relevance: number; createdAt: number }[];
   reports: { id: string; target: string; kind: string; evidence: string; createdAt: number }[];
   evolver: { cycles: number; lastOutcome?: string; running: boolean };
+  circuits: RecurringCircuit[];
+  capabilities: CapabilityLedgerRow[];
   stats: { objectivesCompleted: number; stepsCompleted: number; validationsFailed: number; structuresEvolved: number };
 }
 
@@ -240,4 +284,7 @@ export interface PublicSettings {
   sandboxEnabled: boolean;
   webAllowlist: string[];
   dataDir: string;
+  tierGraduationThreshold: number;   // consecutive clean approvals before C→B
+  hasGdocsCredentials: boolean;      // OAuth client configured (vault-only)
+  gdocsConnected: boolean;           // tokens present
 }

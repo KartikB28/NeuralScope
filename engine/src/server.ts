@@ -102,6 +102,16 @@ function handleHttp(tower: Tower, worldDist: string, req: http.IncomingMessage, 
     return;
   }
 
+  // content-addressed blob retrieval (Q1) — full prompts/responses/outputs
+  if (url.pathname.startsWith('/api/blob/')) {
+    const hash = url.pathname.slice('/api/blob/'.length);
+    const content = tower.registry.blobs.get(hash);
+    if (content === null) { res.writeHead(404); res.end('unknown blob'); return; }
+    res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' });
+    res.end(content);
+    return;
+  }
+
   if (url.pathname.startsWith('/api/skill/')) {
     const name = url.pathname.slice('/api/skill/'.length).replace(/[^a-z0-9-]/gi, '');
     const content = tower.registry.readSkill(name);

@@ -99,7 +99,15 @@ export class SecurityManager {
         { objectiveId: call.objectiveId, stepId: call.stepId });
       return { kind: 'allow' };
     }
-    // tier C — amber gate, wait for the human
+    // tier C — unless this capability has EARNED tier B on a clean record
+    const capability = `${call.connector}.${call.tool}`;
+    const ledger = this.ledgerRow(capability);
+    if (ledger.tier === 'B') {
+      this.bus.emit('security.check',
+        { ring: 1, subject: capability, ok: true, detail: `tier B (graduated after ${ledger.consecutiveApprovals} clean approvals) — executed with notification` },
+        { objectiveId: call.objectiveId, stepId: call.stepId });
+      return { kind: 'allow' };
+    }
     const gate: GateRequest = {
       id: `G${Date.now().toString(36)}${Math.floor(Math.random() * 1e4).toString(36)}`,
       tier: 'C',
@@ -136,12 +144,42 @@ export class SecurityManager {
     const gate = this.registry.data.gates.find(g => g.id === gateId);
     if (!gate || gate.status !== 'waiting') return false;
     gate.status = decision;
+    this.recordLedger(gate.action, decision);
     this.registry.save();
     this.bus.emit(decision === 'approved' ? 'security.gate.approved' : 'security.gate.denied',
       { gateId }, { objectiveId: gate.objectiveId, stepId: gate.stepId });
     const waiter = this.gateWaiters.get(gateId);
     if (waiter) { this.gateWaiters.delete(gateId); waiter(decision); }
     return true;
+  }
+
+  // ---- graduation ledger (Q3): C→B is earned, never granted ---------------
+  private ledgerRow(capability: string) {
+    let row = this.registry.data.capabilities.find(c => c.capability === capability);
+    if (!row) {
+      row = { capability, tier: 'C', consecutiveApprovals: 0, denials: 0 };
+      this.registry.data.capabilities.push(row);
+    }
+    return row;
+  }
+
+  private recordLedger(capability: string, decision: 'approved' | 'denied'): void {
+    const row = this.ledgerRow(capability);
+    if (decision === 'denied') {
+      // one reversal resets the track record entirely
+      row.denials++;
+      row.consecutiveApprovals = 0;
+      return;
+    }
+    row.consecutiveApprovals++;
+    const threshold = Math.max(1, this.registry.data.settings.tierGraduationThreshold);
+    if (row.tier === 'C' && row.consecutiveApprovals >= threshold) {
+      row.tier = 'B';
+      row.graduatedAt = Date.now();
+      this.bus.emit('capability.graduated', {
+        capability, from: 'C', to: 'B', approvals: row.consecutiveApprovals,
+      });
+    }
   }
 
   /** Full gated tool invocation: decide → (maybe wait) → invoke. */
