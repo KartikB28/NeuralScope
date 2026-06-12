@@ -1,0 +1,27 @@
+{
+  "_comment": "Connector manifests. Built-in connectors (filesystem, web) are implemented in engine/src/connectors and registered at boot. Entries marked planned are roadmap gates: the framework exists; they ship with their own OAuth/security review.",
+  "filesystem": {
+    "builtin": true,
+    "tier": "A",
+    "scope": "hard-scoped to each objective's workspace folder; writes outside are on the no-go map",
+    "tools": ["read", "write", "list", "delete (tier C)"]
+  },
+  "web": {
+    "builtin": true,
+    "tier": "A",
+    "scope": "HTTP GET only; allow-listed domains are tier A, anything else raises a tier-C approval gate; private address ranges are blocked",
+    "tools": ["fetch"]
+  },
+  "gdocs": {
+    "builtin": false,
+    "planned": true,
+    "tier": "B",
+    "note": "Google Docs/Drive via OAuth — requires your own OAuth client credentials; lands as a versioned connector with mocked Testing-mode writes."
+  },
+  "embodiment": {
+    "builtin": false,
+    "planned": true,
+    "tier": "D",
+    "note": "Mouse/keyboard control (the Python embodiment cluster in reference/). Stays dry-run and unwired until the Phase-3 security review; see SECURITY.md."
+  }
+}

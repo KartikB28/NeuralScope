@@ -1,0 +1,58 @@
+{
+  "name": "neuralscope",
+  "productName": "NeuralScope",
+  "version": "0.1.0",
+  "description": "A living cognitive environment — a self-improving multi-agent work system you watch and shape inside a 3D world.",
+  "repository": "github:KartikB28/NeuralScope",
+  "main": "dist/desktop/main.cjs",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc -p engine/tsconfig.json --noEmit && tsc -p desktop/tsconfig.json --noEmit && tsc -p world/tsconfig.json --noEmit",
+    "engine": "node dist/engine/index.cjs",
+    "dev:world": "vite world",
+    "app": "electron .",
+    "smoke": "node scripts/smoke.mjs",
+    "icon": "node scripts/make-icon.mjs",
+    "dist": "npm run build && electron-builder --publish never",
+    "dist:all": "npm run build && electron-builder -mwl --publish never"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "three": "^0.169.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.0",
+    "@types/react": "^18.3.10",
+    "@types/react-dom": "^18.3.0",
+    "@types/three": "^0.169.0",
+    "@types/ws": "^8.5.12",
+    "@vitejs/plugin-react": "^4.3.2",
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8",
+    "esbuild": "^0.24.0",
+    "typescript": "^5.6.2",
+    "vite": "^5.4.8"
+  },
+  "build": {
+    "appId": "com.neuralscope.app",
+    "productName": "NeuralScope",
+    "artifactName": "NeuralScope-${version}-${os}-${arch}.${ext}",
+    "directories": { "output": "release", "buildResources": "build" },
+    "files": [
+      "dist/**/*",
+      "world/dist/**/*",
+      "definitions/**/*",
+      "package.json"
+    ],
+    "asarUnpack": ["definitions/**/*"],
+    "win": { "target": [{ "target": "nsis", "arch": ["x64"] }] },
+    "nsis": { "oneClick": true, "perMachine": false, "deleteAppDataOnUninstall": false },
+    "mac": { "target": [{ "target": "dmg", "arch": ["arm64", "x64"] }], "category": "public.app-category.developer-tools" },
+    "linux": { "target": [{ "target": "AppImage", "arch": ["x64"] }, { "target": "deb", "arch": ["x64"] }], "category": "Development" },
+    "publish": { "provider": "github" }
+  }
+}

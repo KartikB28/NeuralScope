@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NeuralScope — The Complete Blueprint</title>
+<style>
+  :root{
+    --bg:#060b12; --panel:#0b1420; --panel2:#0e1a29; --line:#1c3349;
+    --ink:#d7e6f2; --muted:#7d9ab1; --dim:#51708a;
+    --cyan:#1fb3e8; --green:#27c46a; --red:#ff3b52; --amber:#d8a93c; --violet:#9d7bff;
+    --mono:ui-monospace,'SF Mono','Cascadia Code',Menlo,Consolas,monospace;
+    --sans:'Segoe UI',system-ui,-apple-system,Roboto,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.75;font-size:16px}
+  .wrap{max-width:960px;margin:0 auto;padding:0 28px 120px}
+
+  /* cover */
+  .cover{padding:90px 0 60px;border-bottom:1px solid var(--line)}
+  .cover .tag{font-family:var(--mono);font-size:12px;letter-spacing:.35em;color:var(--cyan)}
+  .cover h1{font-size:54px;line-height:1.05;letter-spacing:-.02em;margin:18px 0 10px;font-weight:800}
+  .cover h1 span{color:var(--cyan)}
+  .cover .sub{font-size:19px;color:var(--muted);max-width:680px}
+  .meta{display:flex;gap:26px;margin-top:30px;font-family:var(--mono);font-size:12px;color:var(--dim);flex-wrap:wrap}
+  .meta b{color:var(--ink);font-weight:600}
+
+  /* sections */
+  section{padding:64px 0 8px;border-bottom:1px solid var(--line)}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.3em;color:var(--dim)}
+  h2{font-size:32px;margin:8px 0 6px;letter-spacing:-.01em}
+  .airport{font-style:italic;color:var(--amber);font-size:15px;margin-bottom:22px}
+  h3{font-size:20px;margin:34px 0 8px;color:var(--cyan)}
+  h4{font-size:16px;margin:24px 0 6px;color:var(--ink)}
+  p{margin:0 0 16px;color:var(--ink)}
+  p.note{color:var(--muted)}
+  em{color:var(--amber);font-style:normal;font-weight:600}
+  strong{color:#fff}
+
+  /* cards */
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:22px 0}
+  @media(max-width:720px){.grid{grid-template-columns:1fr}.cover h1{font-size:38px}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:18px 20px}
+  .card .k{font-family:var(--mono);font-size:11px;letter-spacing:.2em;margin-bottom:8px}
+  .card p{font-size:14.5px;color:var(--muted);margin:0}
+  .card p b{color:var(--ink)}
+  .c-cyan .k{color:var(--cyan)} .c-green .k{color:var(--green)} .c-red .k{color:var(--red)}
+  .c-amber .k{color:var(--amber)} .c-violet .k{color:var(--violet)} .c-white .k{color:#fff}
+
+  /* figure */
+  figure{margin:28px 0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:22px;overflow-x:auto}
+  figcaption{font-family:var(--mono);font-size:11.5px;color:var(--dim);margin-top:14px;letter-spacing:.08em}
+  svg{display:block;width:100%;height:auto}
+  svg text{font-family:var(--mono)}
+
+  /* code */
+  pre{background:#050a10;border:1px solid var(--line);border-radius:8px;padding:16px 18px;font-family:var(--mono);font-size:12.5px;color:#a9c8de;overflow-x:auto;margin:18px 0;line-height:1.6}
+  code{font-family:var(--mono);font-size:.92em;color:var(--cyan);background:rgba(31,179,232,.08);padding:1px 5px;border-radius:4px}
+
+  /* callouts */
+  .call{border-left:3px solid var(--cyan);background:rgba(31,179,232,.06);padding:14px 18px;border-radius:0 8px 8px 0;margin:20px 0;font-size:15px}
+  .call.warn{border-color:var(--amber);background:rgba(216,169,60,.06)}
+  .call.hard{border-color:var(--red);background:rgba(255,59,82,.06)}
+  .call.good{border-color:var(--green);background:rgba(39,196,106,.06)}
+  .call .t{font-family:var(--mono);font-size:11px;letter-spacing:.25em;margin-bottom:6px;display:block}
+  .call.warn .t{color:var(--amber)} .call.hard .t{color:var(--red)} .call.good .t{color:var(--green)} .call .t{color:var(--cyan)}
+  .call p{margin:0;color:var(--ink)}
+
+  /* steps */
+  .step{display:flex;gap:18px;margin:18px 0;align-items:flex-start}
+  .step .n{font-family:var(--mono);min-width:44px;height:44px;border:1px solid var(--line);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--cyan);font-size:14px;background:var(--panel)}
+  .step .b h4{margin:8px 0 4px}
+  .step .b p{font-size:15px;color:var(--muted);margin-bottom:8px}
+
+  /* day plan */
+  .day{display:flex;gap:16px;border:1px solid var(--line);border-radius:8px;padding:14px 18px;margin:10px 0;background:var(--panel)}
+  .day .d{font-family:var(--mono);color:var(--amber);min-width:64px;font-size:13px;padding-top:2px}
+  .day p{margin:0;font-size:14.5px;color:var(--muted)}
+  .day p b{color:var(--ink)}
+
+  /* glossary */
+  dl{margin:18px 0}
+  dt{font-family:var(--mono);color:var(--cyan);font-size:14px;margin-top:14px}
+  dd{color:var(--muted);font-size:15px;margin-left:0}
+
+  .toc{font-family:var(--mono);font-size:13px;line-height:2.2;color:var(--muted);margin-top:24px;columns:2;column-gap:40px}
+  @media(max-width:720px){.toc{columns:1}}
+  .toc a{color:var(--muted);text-decoration:none;border-bottom:1px dotted var(--line)}
+  .toc a:hover{color:var(--cyan)}
+  .toc .n{color:var(--dim);margin-right:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ============ COVER ============ -->
+<div class="cover">
+  <div class="tag">NEURALSCOPE · MASTER BLUEPRINT · v1.0</div>
+  <h1>The Airport, the Tower,<br>and the <span>Living Machine</span></h1>
+  <p class="sub">A complete, plain-English engineering blueprint for NeuralScope: a self-improving, multi-agent work system you watch and shape inside a 3D world — and that does real work on your real machine.</p>
+  <div class="meta">
+    <div>STATUS · <b>Pre-build architecture</b></div>
+    <div>AUDIENCE · <b>Anyone, zero background needed</b></div>
+    <div>BUILD WINDOW · <b>7-day vertical slice, then phases</b></div>
+  </div>
+  <div class="toc">
+    <div><span class="n">01</span><a href="#s1">What we are actually building</a></div>
+    <div><span class="n">02</span><a href="#s2">The airport metaphor — full map</a></div>
+    <div><span class="n">03</span><a href="#s3">The five layers of the system</a></div>
+    <div><span class="n">04</span><a href="#s4">Every block, explained</a></div>
+    <div><span class="n">05</span><a href="#s5">How the system boots</a></div>
+    <div><span class="n">06</span><a href="#s6">The life of one objective</a></div>
+    <div><span class="n">07</span><a href="#s7">Connectors: Docs, APIs, local LLMs</a></div>
+    <div><span class="n">08</span><a href="#s8">Memory</a></div>
+    <div><span class="n">09</span><a href="#s9">The Evolution Engine</a></div>
+    <div><span class="n">10</span><a href="#s10">Security &amp; the kill switch</a></div>
+    <div><span class="n">11</span><a href="#s11">Linking it all to the 3D world</a></div>
+    <div><span class="n">12</span><a href="#s12">The honest physics</a></div>
+    <div><span class="n">13</span><a href="#s13">The 7-day build plan</a></div>
+    <div><span class="n">14</span><a href="#s14">Road to the digital company</a></div>
+    <div><span class="n">15</span><a href="#s15">Glossary</a></div>
+  </div>
+</div>
+
+<!-- ============ 01 ============ -->
+<section id="s1">
+  <div class="eyebrow">SECTION 01</div>
+  <h2>What we are actually building</h2>
+  <p class="airport">✈ In airport terms: we are not building one airplane. We are building the entire airport — runways, tower, hangars, security, and the engineering bay that designs better planes every week.</p>
+
+  <p>NeuralScope is <strong>two things bolted together</strong>. The first is the <strong>Engine</strong> — a backend program that lives on your computer, takes objectives ("build me a landing page", "research this market", "fill in this Google Doc"), breaks them into steps, assigns AI models to each step, runs them, checks the results, and saves everything it learned. The second is the <strong>World</strong> — the 3D environment you already designed, which is a live window into the Engine. Every sphere, block, and line in the World corresponds to a real, running thing in the Engine. Click it, and you see its real state. Pause it, and the real process pauses.</p>
+
+  <p>The single most important design decision in this whole document is this: <em>the 3D world never does any work itself</em>. It is a screen, a beautiful one, into the Engine. The Engine does all the work and broadcasts everything it does as a stream of small messages ("worker booted", "step completed", "validation failed"). The World listens to that stream and draws it. This separation is what makes the system clean: you can rebuild the visuals a hundred times without touching the brain, and evolve the brain without breaking the visuals.</p>
+
+  <div class="call good"><span class="t">THE ONE-SENTENCE VERSION</span>
+  <p>A program on your machine runs teams of AI workers through checked, repeatable pipelines; everything it does is broadcast as events; the 3D world renders those events as living structures you can inspect and reshape.</p></div>
+</section>
+
+<!-- ============ 02 ============ -->
+<section id="s2">
+  <div class="eyebrow">SECTION 02</div>
+  <h2>The airport metaphor — the full map</h2>
+  <p class="airport">✈ Learn these twelve mappings and you understand the entire system. Every later section just zooms into one of them.</p>
+
+  <div class="grid">
+    <div class="card c-cyan"><div class="k">CONTROL TOWER → THE ORCHESTRATOR</div><p>One program that sees everything, schedules everything, and is the only authority allowed to start or stop flights. The Engine's core.</p></div>
+    <div class="card c-white"><div class="k">FLIGHT PLAN → THE TASK GRAPH</div><p>Before any plane flies, a route is filed. Before any work runs, the objective is compiled into a step-by-step graph: what happens, in what order, with what checks.</p></div>
+    <div class="card c-red"><div class="k">PILOTS → WORKER MODELS</div><p>The AI models (local or via API). Replaceable, specialized, never in charge of the airport. A pilot flies one plane; a worker runs one step.</p></div>
+    <div class="card c-green"><div class="k">PILOT TRAINING MANUALS → SKILLS</div><p>Markdown files of instructions and examples attached to a worker before takeoff. Same pilot + different manual = different capability.</p></div>
+    <div class="card c-cyan"><div class="k">THE BLACK BOX → TRANSPARENCY BLOCKS</div><p>Every flight records everything: every input, output, decision, and timing. Nothing is invisible. This recording is also the raw material evolution feeds on.</p></div>
+    <div class="card c-white"><div class="k">AIRPORT SECURITY → SECURITY CYCLES</div><p>Checks at every gate: is this worker doing what the flight plan says? Has it drifted? Should it be rebooted and re-grounded on the objective?</p></div>
+    <div class="card c-green"><div class="k">ENGINEERING BAY → EVOLVER BLOCKS</div><p>Engineers who read black-box recordings of failed or slow flights, redesign the plane, test the new design in the hangar, and only then roll it out to the fleet.</p></div>
+    <div class="card c-amber"><div class="k">HANGAR → TESTING ENVIRONMENT</div><p>Where redesigned planes fly trial runs against the old design. Nothing touches passengers until it wins here.</p></div>
+    <div class="card c-amber"><div class="k">CHARTER FLIGHT → ONE-TIME ENVIRONMENT</div><p>A flight that exists for one job: take off, deliver, land, scrap the plane. No learning is kept.</p></div>
+    <div class="card c-violet"><div class="k">GATES → CONNECTORS</div><p>The doors between the airport and the outside world: Google Docs, your file system, web APIs, local LLM runtimes, payment tools. Each gate has its own security level.</p></div>
+    <div class="card c-violet"><div class="k">CARGO WAREHOUSE → MEMORY</div><p>What the airport keeps between flights: facts, results, learned procedures. Important cargo gets a permanent warehouse slot; junk decays and is thrown out.</p></div>
+    <div class="card c-cyan"><div class="k">THE DEPARTURES BOARD → THE 3D WORLD</div><p>The live display. It shows reality; it never invents it. You, standing in the terminal, watching everything — and able to walk up and redirect a flight.</p></div>
+  </div>
+</section>
+
+<!-- ============ 03 ============ -->
+<section id="s3">
+  <div class="eyebrow">SECTION 03</div>
+  <h2>The five layers of the system</h2>
+  <p class="airport">✈ An airport is layered too: ground, runways, tower, airspace, and the world beyond the fence. Each layer only talks to the layer next to it.</p>
+
+  <figure>
+  <svg viewBox="0 0 900 560" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="ar" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#51708a"/></marker>
+    </defs>
+    <!-- L5 -->
+    <rect x="40" y="20" width="820" height="80" rx="8" fill="#0e1a29" stroke="#1fb3e8" stroke-width="1.5"/>
+    <text x="60" y="50" fill="#1fb3e8" font-size="14" letter-spacing="3">LAYER 5 · THE WORLD (3D FRONTEND)</text>
+    <text x="60" y="76" fill="#7d9ab1" font-size="12">three.js scene · globe + 3 territories · inspector panels · reshape controls · NEVER does work, only renders &amp; sends commands</text>
+    <!-- L4 -->
+    <rect x="40" y="130" width="820" height="80" rx="8" fill="#0e1a29" stroke="#9d7bff" stroke-width="1.5"/>
+    <text x="60" y="160" fill="#9d7bff" font-size="14" letter-spacing="3">LAYER 4 · THE BRIDGE (WEBSOCKET + EVENT BUS)</text>
+    <text x="60" y="186" fill="#7d9ab1" font-size="12">every Engine action = one JSON event · streamed live to the World · commands (pause, edit, inject) flow back down the same pipe</text>
+    <!-- L3 -->
+    <rect x="40" y="240" width="820" height="80" rx="8" fill="#0e1a29" stroke="#ffffff" stroke-width="1.5"/>
+    <text x="60" y="270" fill="#ffffff" font-size="14" letter-spacing="3">LAYER 3 · THE TOWER (ORCHESTRATOR)</text>
+    <text x="60" y="296" fill="#7d9ab1" font-size="12">objective compiler · task-graph scheduler · environment manager (main/testing/one-time) · security gatekeeper · evolution manager</text>
+    <!-- L2 -->
+    <rect x="40" y="350" width="820" height="80" rx="8" fill="#0e1a29" stroke="#ff3b52" stroke-width="1.5"/>
+    <text x="60" y="380" fill="#ff3b52" font-size="14" letter-spacing="3">LAYER 2 · THE RUNWAYS (EXECUTION RUNTIME)</text>
+    <text x="60" y="406" fill="#7d9ab1" font-size="12">worker processes · sandboxed code execution · validators · retry/reboot logic · skill injection · per-step timeouts</text>
+    <!-- L1 -->
+    <rect x="40" y="460" width="820" height="80" rx="8" fill="#0e1a29" stroke="#27c46a" stroke-width="1.5"/>
+    <text x="60" y="490" fill="#27c46a" font-size="14" letter-spacing="3">LAYER 1 · THE GATES (RESOURCES &amp; CONNECTORS)</text>
+    <text x="60" y="516" fill="#7d9ab1" font-size="12">local LLMs (Ollama) · API models · Google Docs/Drive · web APIs · file system · databases · memory store · each behind a permission gate</text>
+    <!-- arrows -->
+    <line x1="450" y1="100" x2="450" y2="128" stroke="#51708a" stroke-width="1.5" marker-end="url(#ar)"/>
+    <line x1="470" y1="128" x2="470" y2="102" stroke="#51708a" stroke-width="1.5" marker-end="url(#ar)"/>
+    <line x1="450" y1="210" x2="450" y2="238" stroke="#51708a" stroke-width="1.5" marker-end="url(#ar)"/>
+    <line x1="470" y1="238" x2="470" y2="212" stroke="#51708a" stroke-width="1.5" marker-end="url(#ar)"/>
+    <line x1="450" y1="320" x2="450" y2="348" stroke="#51708a" stroke-width="1.5" marker-end="url(#ar)"/>
+    <line x1="470" y1="348" x2="470" y2="322" stroke="#51708a" stroke-width="1.5" marker-end="url(#ar)"/>
+    <line x1="450" y1="430" x2="450" y2="458" stroke="#51708a" stroke-width="1.5" marker-end="url(#ar)"/>
+    <line x1="470" y1="458" x2="470" y2="432" stroke="#51708a" stroke-width="1.5" marker-end="url(#ar)"/>
+  </svg>
+  <figcaption>FIG 1 · The five layers. Events flow up, commands flow down. No layer skips a layer.</figcaption>
+  </figure>
+
+  <p>The rule that keeps this clean forever: <em>no layer skips a layer</em>. The 3D world never calls Google Docs directly. A worker never draws anything on screen. The Tower never executes code itself — it asks the Runway layer to. When something breaks, you always know which layer to look at, because each layer has exactly one job.</p>
+
+  <h3>The recommended stack (clean, boring, proven)</h3>
+  <p><strong>Engine:</strong> Python with FastAPI and asyncio — the AI ecosystem (model clients, vector stores, Google APIs) lives in Python, and async lets hundreds of light processes run on one machine. <strong>Event bus:</strong> in-process pub/sub written to a SQLite event log (upgradeable to Redis later — don't add infrastructure before you need it). <strong>State:</strong> SQLite for the registry (circuits, skills, connectors, versions) plus a local vector store (Chroma or LanceDB) for memory. <strong>Local models:</strong> Ollama, because it gives you a one-line install, a standard API, and hot model swapping. <strong>Heavy reasoning:</strong> a frontier API model (e.g. Claude via API) used sparingly as the planner/coordinator. <strong>Connectors:</strong> MCP (Model Context Protocol) servers wherever they exist — Google Drive, file system, browsers — so you inherit a standard instead of hand-writing every integration. <strong>Frontend:</strong> the three.js world, connected by one WebSocket.</p>
+</section>
+
+<!-- ============ 04 ============ -->
+<section id="s4">
+  <div class="eyebrow">SECTION 04</div>
+  <h2>Every block, explained</h2>
+  <p class="airport">✈ Each shape in the 3D world is one of these seven things. Here is exactly what each one is in the Engine — its job, its inputs, its outputs, and what happens when it fails.</p>
+
+  <h3>1 · The Objective Node — where everything begins</h3>
+  <p>You type or speak an objective in plain language. The Engine sends it to the <strong>Objective Compiler</strong>: a single call to the strongest model available, with one job — turn human intent into a machine-readable <strong>flight plan</strong>. The compiler outputs a JSON document containing: the goal restated precisely, success criteria (how we will know it's done), the list of steps as a graph (some steps depend on others; independent steps run in parallel), which worker profile each step needs, which skills to attach, which connectors each step is allowed to touch, and a risk rating that decides how much security wraps around it.</p>
+<pre>{
+  "objective_id": "OBJ-2026-0613-001",
+  "goal": "Build and deploy a one-page site for the bakery brand",
+  "success_criteria": ["site loads locally", "all 4 sections present", "lighthouse > 85"],
+  "risk": "medium",
+  "environment": "one-time",
+  "steps": [
+    { "id": "S1", "task": "research 5 reference bakery sites", "worker": "researcher",
+      "skills": ["web-research.md"], "connectors": ["web"], "depends_on": [] },
+    { "id": "S2", "task": "write copy for 4 sections", "worker": "writer",
+      "skills": ["brand-voice.md"], "connectors": [], "depends_on": ["S1"] },
+    { "id": "S3", "task": "build HTML/CSS", "worker": "coder",
+      "skills": ["frontend.md"], "connectors": ["filesystem:project/"], "depends_on": ["S2"] },
+    { "id": "S4", "task": "validate against success criteria", "worker": "validator",
+      "skills": ["qa.md"], "connectors": ["filesystem:project/"], "depends_on": ["S3"] }
+  ]
+}</pre>
+  <p class="note">This JSON <em>is</em> the circuit you see in 3D. Each step becomes a node. Each "depends_on" becomes a line. The shape of the structure in the world is literally the shape of the plan.</p>
+
+  <h3>2 · Worker Models — the red spheres</h3>
+  <p>A worker is <strong>not</strong> a model. A worker is a <em>wrapper around</em> a model: a small runtime that holds (a) which model to call — a 3B local model through Ollama, or an API model, hot-swappable, (b) the skill files injected into its context, (c) the tools/connectors it is permitted to use, (d) a step budget and timeout, and (e) a structured output format it must answer in. The Tower boots workers on demand: when step S3 becomes ready, the Tower spins up a "coder" worker, injects <code>frontend.md</code>, hands it S2's output as input, and tears it down when the step ends. Workers are <strong>disposable by design</strong> — intelligence lives in the structure around them, exactly as your vision states.</p>
+
+  <h3>3 · Skills — the green slabs</h3>
+  <p>A skill is a markdown file in a folder: <code>/skills/web-research.md</code>, <code>/skills/frontend.md</code>. It contains instructions, examples, checklists, and known failure patterns for one capability. Skills are what let a small model punch above its weight — instead of hoping a 3B model "knows" how to write good HTML, you hand it a battle-tested manual. Because skills are plain files, three things become true: you can <strong>edit them live</strong> (in the 3D world or any text editor — next worker boot picks up the new version), the <strong>Evolver can rewrite them</strong> (an improved skill is just a new version of the file, A/B tested in the hangar), and they are <strong>versioned in git</strong>, so every change is reversible.</p>
+
+  <h3>4 · Code Structure — the blue rays</h3>
+  <p>This is the most misunderstood part of agent systems, and the part your vision gets right. The blue rays are <strong>deterministic code</strong> — not AI — that scaffolds each worker: input parsers that clean what goes into the model, output validators that reject malformed answers before they propagate, retry loops with modified prompts, step decomposers that split a too-big task automatically, and checkpointing so a crashed step resumes instead of restarts. The honest framing: <em>a small LLM is a brilliant but unreliable intern; the code structure is the standard operating procedure that makes the intern's work shippable</em>. Most of the system's real quality comes from this layer, and it's also the layer the Evolver improves most often.</p>
+
+  <h3>5 · Transparency Blocks — the turquoise frames</h3>
+  <p>Every single action in the Engine emits an event: <code>worker.booted</code>, <code>step.started</code>, <code>model.called</code> (with the full prompt and response), <code>validation.failed</code>, <code>step.completed</code>. The Transparency layer does three jobs with that stream: it <strong>records</strong> everything to the event log (the black box), it <strong>summarizes</strong> in real time (so when you click a node, you see "currently: rewriting section 2 after validation failed on word count" instead of raw logs), and it <strong>analyzes</strong> — a small background worker reads recent traces and files structured reports: "the coder worker fails 30% of the time on CSS grid tasks", "step S2 outputs are drifting from brand voice". Those reports are the input feed to the Evolver Blocks. One honest note: we cannot literally read a neural network's internal thoughts; what we <em>can</em> capture is every prompt, every response, every intermediate reasoning step the worker writes down, every tool call, and every validation result — which in practice is a complete record of behavior.</p>
+
+  <h3>6 · Security Cycles — the white spheres</h3>
+  <p>Security runs at three rings. <strong>Ring 1 — per step:</strong> before any step executes, a gatekeeper check: is this connector in the step's allowed list? Is this file path inside the permitted folder? Is this shell command on the allow-list? <strong>Ring 2 — per worker:</strong> a drift monitor compares what the worker is producing against the step's stated task; if similarity drops or the worker loops, it's rebooted with a re-grounded prompt containing the original objective (your "regain focus, regain objective" cycle, literally implemented). <strong>Ring 3 — per environment:</strong> anything touching money, credentials, sending emails, or deleting files outside the project folder requires a human approval event — it shows up in the 3D world as a pulsing amber gate that waits for your click. Plus one global, physical control: the <strong>kill switch</strong>, a single command that freezes every worker and closes every connector instantly.</p>
+
+  <h3>7 · Evolver Blocks — the green giants</h3>
+  <p>Covered fully in Section 09, but the one-paragraph version: an Evolver is a scheduled pipeline that reads Transparency reports, picks the worst-performing structure (a skill, a prompt template, a validator, a step decomposition), generates 2–5 mutated alternatives, replays recorded real tasks against each alternative in the Testing environment, scores them against the originals, and promotes the winner — writing a new version of the file and logging the change. It is slow, heavy, and deliberate on purpose: it runs on cycles (e.g. nightly, or after every 50 completed objectives), not constantly.</p>
+
+  <h3>The three environments, precisely</h3>
+  <div class="grid">
+    <div class="card c-cyan"><div class="k">MAIN</div><p><b>What it is in code:</b> the registry of <i>promoted, versioned</i> structures — skills, templates, pipelines marked <code>stable</code> — plus all long-running circuits (watchers, schedulers, recurring jobs). Only the Evolver's promotion step can write here. It accumulates; it never resets.</p></div>
+    <div class="card c-green"><div class="k">TESTING</div><p><b>What it is in code:</b> a sandboxed copy of the runtime where candidate structures run against <i>recorded replay tasks</i> with scoring enabled and all external write-connectors mocked. Nothing here can touch your real files, docs, or accounts.</p></div>
+    <div class="card c-amber"><div class="k">ONE-TIME</div><p><b>What it is in code:</b> a job whose flight plan has <code>persist: false</code>. It runs in a temp folder, delivers its output to you, and its memory writes are discarded. The trace is kept briefly for the Evolver, then expires.</p></div>
+  </div>
+</section>
+
+<!-- ============ 05 ============ -->
+<section id="s5">
+  <div class="eyebrow">SECTION 05</div>
+  <h2>How the system boots</h2>
+  <p class="airport">✈ Opening the airport in the morning: power the tower, check the runways, unlock the gates, light the departures board.</p>
+
+  <figure>
+  <svg viewBox="0 0 900 240" xmlns="http://www.w3.org/2000/svg">
+    <defs><marker id="ar2" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#51708a"/></marker></defs>
+    <g font-size="12">
+      <rect x="20"  y="60" width="130" height="64" rx="8" fill="#0e1a29" stroke="#ffffff"/><text x="36" y="86" fill="#fff">1 · TOWER UP</text><text x="36" y="106" fill="#7d9ab1" font-size="10">load registry (SQLite)</text>
+      <rect x="190" y="60" width="130" height="64" rx="8" fill="#0e1a29" stroke="#27c46a"/><text x="206" y="86" fill="#27c46a">2 · GATES</text><text x="206" y="106" fill="#7d9ab1" font-size="10">ping each connector</text>
+      <rect x="360" y="60" width="130" height="64" rx="8" fill="#0e1a29" stroke="#ff3b52"/><text x="376" y="86" fill="#ff3b52">3 · MODELS</text><text x="376" y="106" fill="#7d9ab1" font-size="10">warm Ollama, test API</text>
+      <rect x="530" y="60" width="130" height="64" rx="8" fill="#0e1a29" stroke="#1fb3e8"/><text x="546" y="86" fill="#1fb3e8">4 · RESUME</text><text x="546" y="106" fill="#7d9ab1" font-size="10">reload live circuits</text>
+      <rect x="700" y="60" width="170" height="64" rx="8" fill="#0e1a29" stroke="#9d7bff"/><text x="716" y="86" fill="#9d7bff">5 · WORLD ONLINE</text><text x="716" y="106" fill="#7d9ab1" font-size="10">WebSocket open, snapshot sent</text>
+      <line x1="150" y1="92" x2="188" y2="92" stroke="#51708a" stroke-width="1.5" marker-end="url(#ar2)"/>
+      <line x1="320" y1="92" x2="358" y2="92" stroke="#51708a" stroke-width="1.5" marker-end="url(#ar2)"/>
+      <line x1="490" y1="92" x2="528" y2="92" stroke="#51708a" stroke-width="1.5" marker-end="url(#ar2)"/>
+      <line x1="660" y1="92" x2="698" y2="92" stroke="#51708a" stroke-width="1.5" marker-end="url(#ar2)"/>
+      <text x="20" y="180" fill="#51708a" font-size="11">FAIL BEHAVIOR · a dead connector marks its gate red in the world but never blocks boot · a missing model falls back to the next profile in the chain</text>
+      <text x="20" y="204" fill="#51708a" font-size="11">PERSISTENCE · the world "never resets" because all state lives in SQLite + files — the Engine restarting is invisible; circuits resume from their last checkpoint</text>
+    </g>
+  </svg>
+  <figcaption>FIG 2 · Boot sequence. Total cold-boot target: under 10 seconds.</figcaption>
+  </figure>
+
+  <p>Step 4 is what makes the world feel alive and permanent. The Engine doesn't start "empty" — it reloads every circuit that was live when it last shut down, from checkpoints, and resumes their schedules. Recurring circuits (a watcher that checks a Google Doc hourly, the nightly Evolver cycle, a memory-decay sweep) simply continue. When the 3D world connects, it receives one <strong>snapshot message</strong> describing every existing structure, draws the whole ecosystem, and then switches to live event mode. That's why opening NeuralScope feels like <em>entering</em> a place where things are already happening — because they are.</p>
+</section>
+
+<!-- ============ 06 ============ -->
+<section id="s6">
+  <div class="eyebrow">SECTION 06</div>
+  <h2>The life of one objective — minute by minute</h2>
+  <p class="airport">✈ One complete flight, from the moment you file the plan to wheels-down, including what you see in the world at every moment.</p>
+
+  <div class="step"><div class="n">01</div><div class="b"><h4>You define the objective</h4><p>Typed in the world's command bar (or spoken, later). The world sends one command down the bridge: <code>{"cmd":"objective.create","text":"...","env":"one-time"}</code>. A faint seed-node appears immediately at the edge of the chosen territory.</p></div></div>
+  <div class="step"><div class="n">02</div><div class="b"><h4>The Compiler files the flight plan</h4><p>The Tower calls the planner model with your text plus relevant memory. Out comes the task-graph JSON (Section 04). Risk is rated; required connectors are listed; if any connector needs a permission you haven't granted, the plan pauses at an amber gate. <b>In the world:</b> the seed-node sprouts — one node per step, lines per dependency. You are literally watching the plan being drawn.</p></div></div>
+  <div class="step"><div class="n">03</div><div class="b"><h4>The Scheduler finds ready steps</h4><p>Any step whose dependencies are complete is "ready". The scheduler boots one worker per ready step, up to a concurrency limit. Independent steps run in parallel — this is one of the two honest ways the system beats human speed (the other is never sleeping).</p></div></div>
+  <div class="step"><div class="n">04</div><div class="b"><h4>A worker boots</h4><p>The runtime assembles the worker: model selected (cheapest profile that historically passes this step type), skills injected, tools scoped, output schema attached, timeout armed. Event: <code>worker.booted</code>. <b>In the world:</b> a red sphere ignites on the step node, its skill slabs clicking into place, blue scaffold rays extending.</p></div></div>
+  <div class="step"><div class="n">05</div><div class="b"><h4>The step executes inside the scaffold</h4><p>The deterministic loop: build prompt → call model → parse → <b>validate</b>. Validators are real code: does the JSON parse, do the files exist, does the HTML pass lint, do tests pass, does output match success criteria for this step. Pass → step output saved, checkpoint written. Fail → retry with the failure injected into the prompt (max N times) → still failing → security reboot with re-grounded objective → still failing → step marked <code>failed</code>, becomes a visible red fracture in the world, and a failure report is filed to the Evolver feed. The objective routes around it if the graph allows, or pauses for you if it doesn't.</p></div></div>
+  <div class="step"><div class="n">06</div><div class="b"><h4>Security watches the whole time</h4><p>Ring-1 gate checks on every tool call; ring-2 drift checks every K seconds per worker; ring-3 human gates on anything irreversible. <b>In the world:</b> the white sphere orbiting the circuit pulses on every completed check cycle.</p></div></div>
+  <div class="step"><div class="n">07</div><div class="b"><h4>Final validation &amp; delivery</h4><p>The last step is always a validator worker checking the objective-level success criteria from step 02. Pass → outputs delivered (files in your output folder, doc updated, link presented) and the event <code>objective.completed</code> fires. <b>In the world:</b> the circuit settles, brightens once, and either takes residence (main) or gracefully dissolves (one-time).</p></div></div>
+  <div class="step"><div class="n">08</div><div class="b"><h4>The trace becomes fuel</h4><p>The full black-box recording is summarized into memory (what worked, what failed, cost, duration) and queued as replay material for the next Evolver cycle. Every flight makes the next flight slightly better. That is the entire trick.</p></div></div>
+
+  <figure>
+  <svg viewBox="0 0 900 430" xmlns="http://www.w3.org/2000/svg">
+    <defs><marker id="ar3" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#51708a"/></marker></defs>
+    <g font-size="12">
+      <rect x="30" y="30" width="150" height="50" rx="8" fill="#0e1a29" stroke="#d8a93c"/><text x="50" y="60" fill="#d8a93c">OBJECTIVE IN</text>
+      <rect x="240" y="30" width="150" height="50" rx="8" fill="#0e1a29" stroke="#fff"/><text x="260" y="60" fill="#fff">COMPILE PLAN</text>
+      <rect x="450" y="30" width="150" height="50" rx="8" fill="#0e1a29" stroke="#fff"/><text x="468" y="60" fill="#fff">SCHEDULE STEP</text>
+      <rect x="660" y="30" width="180" height="50" rx="8" fill="#0e1a29" stroke="#ff3b52"/><text x="680" y="60" fill="#ff3b52">BOOT WORKER</text>
+      <rect x="660" y="140" width="180" height="50" rx="8" fill="#0e1a29" stroke="#ff3b52"/><text x="678" y="170" fill="#ff3b52">EXECUTE + PARSE</text>
+      <rect x="450" y="140" width="150" height="50" rx="8" fill="#0e1a29" stroke="#1fb3e8"/><text x="478" y="170" fill="#1fb3e8">VALIDATE</text>
+      <rect x="240" y="140" width="150" height="50" rx="8" fill="#0e1a29" stroke="#27c46a"/><text x="252" y="164" fill="#27c46a">PASS → SAVE +</text><text x="252" y="180" fill="#27c46a">CHECKPOINT</text>
+      <rect x="450" y="250" width="150" height="50" rx="8" fill="#0e1a29" stroke="#d8a93c"/><text x="462" y="274" fill="#d8a93c">FAIL → RETRY</text><text x="462" y="290" fill="#7d9ab1" font-size="10">inject failure, max N</text>
+      <rect x="660" y="250" width="180" height="50" rx="8" fill="#0e1a29" stroke="#fff"/><text x="672" y="274" fill="#fff">STILL FAILING →</text><text x="672" y="290" fill="#7d9ab1" font-size="10">security reboot, re-ground</text>
+      <rect x="660" y="350" width="180" height="50" rx="8" fill="#0e1a29" stroke="#ff3b52"/><text x="672" y="374" fill="#ff3b52">MARK FAILED</text><text x="672" y="390" fill="#7d9ab1" font-size="10">file report → EVOLVER</text>
+      <rect x="30" y="140" width="150" height="50" rx="8" fill="#0e1a29" stroke="#27c46a"/><text x="44" y="164" fill="#27c46a">ALL STEPS DONE</text><text x="44" y="180" fill="#7d9ab1" font-size="10">→ deliver + learn</text>
+      <line x1="180" y1="55" x2="238" y2="55" stroke="#51708a" stroke-width="1.5" marker-end="url(#ar3)"/>
+      <line x1="390" y1="55" x2="448" y2="55" stroke="#51708a" stroke-width="1.5" marker-end="url(#ar3)"/>
+      <line x1="600" y1="55" x2="658" y2="55" stroke="#51708a" stroke-width="1.5" marker-end="url(#ar3)"/>
+      <line x1="750" y1="80" x2="750" y2="138" stroke="#51708a" stroke-width="1.5" marker-end="url(#ar3)"/>
+      <line x1="660" y1="165" x2="602" y2="165" stroke="#51708a" stroke-width="1.5" marker-end="url(#ar3)"/>
+      <line x1="450" y1="165" x2="392" y2="165" stroke="#27c46a" stroke-width="1.5" marker-end="url(#ar3)"/>
+      <line x1="240" y1="165" x2="182" y2="165" stroke="#27c46a" stroke-width="1.5" marker-end="url(#ar3)"/>
+      <line x1="525" y1="190" x2="525" y2="248" stroke="#d8a93c" stroke-width="1.5" marker-end="url(#ar3)"/>
+      <line x1="525" y1="250" x2="525" y2="195" stroke="#d8a93c" stroke-width="0" />
+      <path d="M 525 250 C 525 220, 560 200, 560 192" stroke="none" fill="none"/>
+      <line x1="600" y1="275" x2="658" y2="275" stroke="#51708a" stroke-width="1.5" marker-end="url(#ar3)"/>
+      <line x1="750" y1="300" x2="750" y2="348" stroke="#51708a" stroke-width="1.5" marker-end="url(#ar3)"/>
+      <path d="M 450 275 C 380 275, 330 230, 320 195" stroke="#51708a" stroke-width="1.5" fill="none" marker-end="url(#ar3)"/>
+      <text x="350" y="240" fill="#51708a" font-size="10">retry loops back to validate</text>
+      <text x="60" y="105" fill="#51708a" font-size="10">scheduler loops until graph complete</text>
+      <path d="M 105 140 C 105 110, 290 95, 460 83" stroke="#274a63" stroke-width="1" stroke-dasharray="4 4" fill="none"/>
+    </g>
+  </svg>
+  <figcaption>FIG 3 · The execution loop. The green path is the happy path; everything else is the scaffold earning its keep.</figcaption>
+  </figure>
+</section>
+
+<!-- ============ 07 ============ -->
+<section id="s7">
+  <div class="eyebrow">SECTION 07</div>
+  <h2>Connectors — adding Google Docs, APIs, local LLMs, and code, live</h2>
+  <p class="airport">✈ Gates can be opened, closed, and rebuilt while the airport is running. No shutdowns to add a new destination.</p>
+
+  <p>Every external thing the system can touch is a <strong>connector</strong>: a small standardized adapter with five parts — a manifest (name, what it does), credentials (stored encrypted, never inside prompts), a permission scope (read-only / read-write / requires-human-approval), the tool functions it exposes to workers, and a health check. All connectors live in a registry table, and the registry is <strong>hot</strong>: changes apply to the next worker boot, no restart ever needed.</p>
+
+  <h3>Adding each type, concretely</h3>
+  <p><strong>Google Docs/Drive:</strong> you click "add gate" in the world → the Engine starts a one-time OAuth flow in your browser → you approve → tokens stored encrypted → the connector registers tools like <code>docs.read</code>, <code>docs.append</code>, <code>docs.replace_section</code>. From then on, any flight plan can request the <code>gdocs</code> connector, and a worker can complete entries in your documents. Removing it = one click, tokens deleted, gate vanishes from the world. <strong>Web APIs:</strong> add via a small manifest (base URL, auth header, allowed endpoints, rate limit) — the Engine auto-generates the tool functions and a mock for the Testing environment. <strong>Local LLMs:</strong> the Engine watches Ollama's model list; pull a new model with one command and it appears in the world as a new available energy source; model <em>profiles</em> (e.g. "coder = qwen2.5-coder:7b, temp 0.2, fallback → API") are registry rows you can edit live, and every worker boot reads the current profile. <strong>Code structures:</strong> validators, prompt templates, and step decomposers are versioned files in <code>/structures/</code>; editing one creates a new version marked <code>experimental</code>, which the Evolver (or you, manually) promotes to <code>stable</code> after it wins in Testing.</p>
+
+  <div class="call"><span class="t">EDITING IN REAL TIME, EXACTLY</span>
+  <p>Everything editable is a file or a registry row, and nothing is loaded permanently into a running process — workers assemble themselves fresh at boot from the current state. So "editing in real time" means: you change a skill, profile, or structure → the change is versioned → every worker booted from that moment uses it → running workers finish on the old version (no mid-flight surprises). Clean, safe, instant.</p></div>
+</section>
+
+<!-- ============ 08 ============ -->
+<section id="s8">
+  <div class="eyebrow">SECTION 08</div>
+  <h2>Memory — what the system keeps</h2>
+  <p class="airport">✈ The cargo warehouse: important cargo gets a labeled permanent slot, routine cargo sits on shelves until unused, junk is swept out nightly.</p>
+
+  <p>Memory has three tiers, matching your "memory feels physical" rule. <strong>Tier 1 — Working memory:</strong> the live context of an active objective (step outputs, intermediate files). Lives only as long as the flight; in one-time jobs it's destroyed on landing. <strong>Tier 2 — Episodic memory:</strong> compressed summaries of completed objectives ("built bakery site; CSS grid failed twice; final cost $0.41; pattern: always validate fonts early"), stored as vectors so future planning can recall similar past work. Each entry has a relevance score that <em>decays</em> when unused — unused memories literally fade, and a nightly sweep deletes the faded ones. <strong>Tier 3 — Structural memory:</strong> the strongest form. When a pattern proves itself repeatedly, the Evolver graduates it from "a memory" into "a structure" — a new skill file, a new validator, a new pipeline template. Knowledge stops being something the system <em>remembers</em> and becomes something the system <em>is</em>. In the world: tier 2 appears as small crystalline nodes that visibly dim as they decay; tier 3 is permanent architecture.</p>
+</section>
+
+<!-- ============ 09 ============ -->
+<section id="s9">
+  <div class="eyebrow">SECTION 09</div>
+  <h2>The Evolution Engine — how it actually gets better</h2>
+  <p class="airport">✈ The engineering bay never touches a plane in flight. It studies the black boxes, builds a better wing, proves it in the hangar against real recorded flights, and only then refits the fleet.</p>
+
+  <figure>
+  <svg viewBox="0 0 900 340" xmlns="http://www.w3.org/2000/svg">
+    <defs><marker id="ar4" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#27c46a"/></marker></defs>
+    <g font-size="12">
+      <circle cx="450" cy="170" r="58" fill="#0e1a29" stroke="#27c46a" stroke-width="1.5"/>
+      <text x="416" y="164" fill="#27c46a">EVOLVER</text><text x="424" y="184" fill="#27c46a">CYCLE</text>
+      <rect x="60"  y="40" width="180" height="56" rx="8" fill="#0e1a29" stroke="#1fb3e8"/><text x="76" y="64" fill="#1fb3e8">1 · CAPTURE</text><text x="76" y="84" fill="#7d9ab1" font-size="10">worst performers from reports</text>
+      <rect x="360" y="20" width="180" height="56" rx="8" fill="#0e1a29" stroke="#fff"/><text x="376" y="44" fill="#fff">2 · DECOMPOSE</text><text x="376" y="64" fill="#7d9ab1" font-size="10">isolate the failing piece</text>
+      <rect x="660" y="40" width="180" height="56" rx="8" fill="#0e1a29" stroke="#9d7bff"/><text x="676" y="64" fill="#9d7bff">3 · MUTATE</text><text x="676" y="84" fill="#7d9ab1" font-size="10">2–5 candidate rewrites</text>
+      <rect x="660" y="240" width="180" height="56" rx="8" fill="#0e1a29" stroke="#d8a93c"/><text x="676" y="264" fill="#d8a93c">4 · TRIAL</text><text x="676" y="284" fill="#7d9ab1" font-size="10">replay real tasks in hangar</text>
+      <rect x="360" y="262" width="180" height="56" rx="8" fill="#0e1a29" stroke="#fff"/><text x="376" y="286" fill="#fff">5 · SCORE</text><text x="376" y="306" fill="#7d9ab1" font-size="10">accuracy · cost · speed · safety</text>
+      <rect x="60"  y="240" width="180" height="56" rx="8" fill="#0e1a29" stroke="#27c46a"/><text x="76" y="264" fill="#27c46a">6 · PROMOTE</text><text x="76" y="284" fill="#7d9ab1" font-size="10">winner → MAIN, versioned, reversible</text>
+      <path d="M 240 70 C 290 55, 320 50, 358 48" stroke="#27c46a" stroke-width="1.5" fill="none" marker-end="url(#ar4)"/>
+      <path d="M 540 48 C 590 50, 620 55, 658 68" stroke="#27c46a" stroke-width="1.5" fill="none" marker-end="url(#ar4)"/>
+      <path d="M 750 96 C 760 150, 760 190, 750 238" stroke="#27c46a" stroke-width="1.5" fill="none" marker-end="url(#ar4)"/>
+      <path d="M 660 290 C 620 292, 590 292, 542 290" stroke="#27c46a" stroke-width="1.5" fill="none" marker-end="url(#ar4)"/>
+      <path d="M 360 290 C 320 292, 290 292, 242 282" stroke="#27c46a" stroke-width="1.5" fill="none" marker-end="url(#ar4)"/>
+      <path d="M 150 240 C 140 190, 140 150, 150 98" stroke="#27c46a" stroke-width="1.5" fill="none" marker-end="url(#ar4)"/>
+    </g>
+  </svg>
+  <figcaption>FIG 4 · One evolution cycle. Runs nightly or every N completed objectives. Losers are archived, not deleted — failed mutations are data too.</figcaption>
+  </figure>
+
+  <p>Three rules make this safe and real instead of hand-wavy. <strong>Rule 1 — evolution targets structures, not models.</strong> We are not retraining neural networks (that's slow, expensive, and unstable on one machine). We evolve the things that demonstrably move quality: skills, prompts, validators, decomposition templates, model-routing profiles. This matches your vision exactly: the system grows smarter because the structures improve. <strong>Rule 2 — trials use recorded reality.</strong> Candidates are tested against replays of real past tasks with known good outcomes — never against made-up benchmarks. <strong>Rule 3 — promotion is gated and reversible.</strong> A candidate must beat the incumbent by a margin, across enough trials, with zero safety regressions; every promotion is a git commit; one click rolls back. In the world, you watch all of this: red threads feeding the green giant, clones competing in the hangar, and a green conduit pulse when a winner ships to Main.</p>
+</section>
+
+<!-- ============ 10 ============ -->
+<section id="s10">
+  <div class="eyebrow">SECTION 10</div>
+  <h2>Security and the kill switch</h2>
+  <p class="airport">✈ An airport with no security isn't fast — it's one incident away from being shut down forever. Same here, especially because this system touches your real files, docs, and eventually money.</p>
+
+  <p>"Complete access to my device" is the goal, but the engineering truth is that <strong>graded access is what makes complete access survivable</strong>. The system that can do anything, unsupervised, on day one is the system that deletes the wrong folder or emails the wrong person on day two. So permissions are tiered, and autonomy is <em>earned per capability</em> — exactly like the Evolver earns promotions:</p>
+
+  <div class="grid">
+    <div class="card c-green"><div class="k">TIER A · AUTONOMOUS</div><p>Read files in project folders, run sandboxed code, call read-only APIs, write inside designated workspaces. No approval needed. The system lives here 95% of the time.</p></div>
+    <div class="card c-cyan"><div class="k">TIER B · NOTIFY</div><p>Writing to your Google Docs, committing code, publishing to a staging site. Executes autonomously but fires a visible notification node in the world you can review and reverse.</p></div>
+    <div class="card c-amber"><div class="k">TIER C · APPROVE FIRST</div><p>Sending emails as you, posting publicly, deploying to production, deleting outside workspaces. Pauses at an amber gate in the world until you click approve.</p></div>
+    <div class="card c-red"><div class="k">TIER D · HUMAN ONLY</div><p>Money movement, account creation, credentials, legal/identity actions. The system prepares everything and hands you the final button. This tier should stay human for a long time — it's also where laws and platform rules live.</p></div>
+  </div>
+
+  <p>A capability can graduate tiers (C → B) after a clean track record you define — e.g. 50 consecutive approved actions with zero reversals. That is how "eventually all I do is monitor" actually happens: not by removing the gates on day one, but by the system earning its way through them with receipts. And above all of it, the <strong>kill switch</strong>: one global command (a key combo and a big red node in the world) that freezes every worker, closes every connector, and snapshots state — resumable, but only by you.</p>
+</section>
+
+<!-- ============ 11 ============ -->
+<section id="s11">
+  <div class="eyebrow">SECTION 11</div>
+  <h2>Linking the Engine to the 3D world</h2>
+  <p class="airport">✈ The departures board protocol: every event in the airport becomes one line on the board, instantly.</p>
+
+  <p>The bridge is one WebSocket carrying small JSON events. Every Engine action has exactly one event, every event has exactly one visual meaning, and the world keeps a dictionary mapping event types to animations. This table <em>is</em> the contract between backend and frontend — once frozen, both sides can be built independently:</p>
+
+<pre>ENGINE EVENT                      → WHAT THE WORLD DRAWS
+─────────────────────────────────────────────────────────────────────
+objective.created                 → seed node materializes in territory
+plan.compiled        (graph json) → circuit grows node-by-node from seed
+worker.booted                     → red sphere ignites, skills slot in
+step.progress        (summary)    → pulse travels the step's edge
+validation.passed                 → edge flashes green, settles white
+validation.failed    (reason)     → red fracture + report thread to Evolver
+security.check                    → white sphere pulse on its orbit
+security.gate.waiting (tier C/D)  → amber gate node, pulsing, clickable
+worker.rebooted      (drift)      → sphere blinks out, re-ignites grounded
+objective.completed               → circuit brightens; persists or dissolves
+evolver.cycle.*      (6 phases)   → the green giant's capture→promote dance
+memory.written / memory.decayed   → crystal node appears / dims out
+connector.added / .down           → gate appears on the globe / turns red</pre>
+
+  <p>Commands flow back down the same pipe: <code>circuit.pause</code>, <code>skill.edit</code>, <code>memory.inject</code>, <code>experiment.promote</code>, <code>gate.approve</code>, <code>objective.create</code>. The world is a remote control, never a brain. And the "globe" you asked for becomes meaningful here, not decorative: the globe is the <strong>boundary of the system</strong> — connectors sit on its surface as gates to the outside world, the three territories float inside it, and the security layer literally is the shell. Inside the globe: trusted, observed, controlled. On the shell: every doorway in and out.</p>
+</section>
+
+<!-- ============ 12 ============ -->
+<section id="s12">
+  <div class="eyebrow">SECTION 12</div>
+  <h2>The honest physics — read this section twice</h2>
+  <p class="airport">✈ A flight plan that ignores physics doesn't produce a faster plane. It produces a crash. Here is exactly what is buildable, and on what timeline.</p>
+
+  <div class="call hard"><span class="t">WHAT ONE WEEK ACTUALLY BUYS</span>
+  <p>One week builds the <strong>complete vertical slice</strong>: the Engine with all seven block types working, real objectives executing end-to-end with real local + API models, Google Docs and filesystem connectors live, the event bridge streaming into the upgraded 3D world, and one real evolution cycle demonstrably improving one real skill. That is a genuinely extraordinary week. It does <strong>not</strong> buy a superhuman that autonomously builds SaaS companies — pretending otherwise would guarantee we build neither.</p></div>
+
+  <p>Three more truths that shape the design, so nothing here surprises us later. <strong>First:</strong> small local LLMs plus scaffolding get dramatically better — that's real and proven — but the planner/coordinator role needs a frontier API model for complex objectives for the foreseeable future. The architecture handles this gracefully: model routing is just a profile, so as local models improve, you flip rows in a registry, not rebuild the system. <strong>Second:</strong> full autonomy on real-world consequences (money, publishing, accounts) is gated by trust and rules, not by code — platforms require human account owners, payment processors have terms, and an autonomous mistake at Tier D is expensive. The earn-your-tier system in Section 10 is the realistic road to "I just monitor", and it genuinely gets there — gradually, with receipts. <strong>Third:</strong> "evolves forever" has a real engineering risk called regression — an "improvement" that wins the benchmark but breaks something unmeasured. That's why trials use recorded real tasks, why promotion requires margins, and why every change is one click from rollback. Slow, heavy, deliberate — your own words for the Evolver — is not a style choice; it's the safety mechanism.</p>
+
+  <div class="call good"><span class="t">WHY THE VISION STILL STANDS</span>
+  <p>Nothing above shrinks the end goal. A system that runs 24/7, parallelizes across dozens of workers, never forgets a lesson, improves its own procedures weekly with proof, and graduates itself into more autonomy is — over months, not days — exactly the digital workforce you described. The week-one slice is the seed of that organism, built so that every later phase is an upgrade, never a rewrite.</p></div>
+</section>
+
+<!-- ============ 13 ============ -->
+<section id="s13">
+  <div class="eyebrow">SECTION 13</div>
+  <h2>The 7-day build plan</h2>
+  <p class="airport">✈ Seven days, one runway poured per day, planes flying by mid-week.</p>
+
+  <div class="day"><div class="d">DAY 1</div><p><b>Skeleton + event bus.</b> Python Engine scaffold: registry (SQLite), event log, pub/sub, WebSocket server, the event contract from Section 11 frozen as a schema file. The world connects and renders raw events as placeholder shapes by evening.</p></div>
+  <div class="day"><div class="d">DAY 2</div><p><b>The Tower.</b> Objective Compiler (planner model → task-graph JSON), scheduler with dependency resolution and parallelism, checkpointing. First end-to-end "hello objective" runs with stub workers.</p></div>
+  <div class="day"><div class="d">DAY 3</div><p><b>Real workers + scaffold.</b> Ollama integration, API model client, model profiles, skill injection from /skills, validators, retry/reboot loop, sandboxed code execution. First real deliverable: the Engine builds a small website end-to-end.</p></div>
+  <div class="day"><div class="d">DAY 4</div><p><b>Gates.</b> Connector framework + three connectors: filesystem (scoped), Google Docs (OAuth), one web API. Permission tiers A–D, the amber approval gate, the kill switch. Engine completes an entry in a real Google Doc.</p></div>
+  <div class="day"><div class="d">DAY 5</div><p><b>Transparency + memory.</b> Full trace recording, live node summaries for the inspector, episodic memory with decay sweep, failure report generation. Click any node in the world → real state, real reasoning summary, real confidence.</p></div>
+  <div class="day"><div class="d">DAY 6</div><p><b>The Evolver.</b> Capture → decompose → mutate → trial-by-replay → score → promote, on one structure type (skills) first. Run it against Day 3–5 traces and ship one provable improvement. The full cycle animates in the world.</p></div>
+  <div class="day"><div class="d">DAY 7</div><p><b>The World, upgraded.</b> The pretty mode: the globe shell with connector gates, refined geometry (instanced crystalline nodes, flowing energy edges, bloom), the three territories inside the sphere, polish on inspector + reshape controls. Demo day: one objective filed by voice/text, watched live, evolved overnight.</p></div>
+
+  <p class="note">Sequencing logic: the event contract on Day 1 is what lets the backend (Days 2–6) and the final visual upgrade (Day 7) proceed without blocking each other — and it's why your 3D world from the prototype keeps working unchanged the entire week.</p>
+</section>
+
+<!-- ============ 14 ============ -->
+<section id="s14">
+  <div class="eyebrow">SECTION 14</div>
+  <h2>Road to the digital company</h2>
+  <p class="airport">✈ After the airport opens: more routes, bigger fleet, and eventually — an airline that runs itself while you read the reports.</p>
+
+  <div class="step"><div class="n">P1</div><div class="b"><h4>Weeks 1–2 · The Working Organism</h4><p>The 7-day slice, hardened. Recurring circuits (watchers, scheduled jobs). 10+ skills. Nightly evolution. You file objectives daily and it delivers: sites, code, research, doc work.</p></div></div>
+  <div class="step"><div class="n">P2</div><div class="b"><h4>Month 1–2 · The Department</h4><p>Multi-objective concurrency, browser-automation connector, email drafting (Tier C), long-horizon projects spanning days with their own circuits. First capability graduations C→B. The system researches its own improvement ideas and files them as objectives for your approval.</p></div></div>
+  <div class="step"><div class="n">P3</div><div class="b"><h4>Month 3–4 · The Studio</h4><p>End-to-end product builds: brand research → naming → site → content → launch checklist, with you approving Tier C/D moments. First revenue experiments — productizing the system's outputs (templates, sites, content services) with you as the human owner of accounts and payments.</p></div></div>
+  <div class="step"><div class="n">P4</div><div class="b"><h4>Month 5+ · The Company You Monitor</h4><p>Most capabilities at Tier A/B with clean track records. Your day: review the morning report the system writes about itself, approve the handful of gated actions, set direction. The Evolver has rewritten most of its own skills several times over. This is the "superhuman team" — arrived at the only way it really can be: earned, audited, reversible.</p></div></div>
+</section>
+
+<!-- ============ 15 ============ -->
+<section id="s15">
+  <div class="eyebrow">SECTION 15</div>
+  <h2>Glossary — every term in one place</h2>
+  <dl>
+    <dt>Objective</dt><dd>A goal you give the system in plain language. The only way work ever starts.</dd>
+    <dt>Flight plan / Task graph</dt><dd>The compiled, machine-readable plan: steps, dependencies, workers, skills, permissions, success criteria.</dd>
+    <dt>Circuit</dt><dd>One objective's living structure — its steps, workers, and connections — as it exists in the Engine and appears in the world.</dd>
+    <dt>Worker</dt><dd>A disposable runtime wrapping one model call-loop for one step: model + skills + tools + validators + timeout.</dd>
+    <dt>Skill</dt><dd>A versioned markdown manual injected into a worker that specializes its behavior.</dd>
+    <dt>Code structure / Scaffold</dt><dd>Deterministic code around every worker: parsing, validation, retries, decomposition, checkpoints. Where most reliability comes from.</dd>
+    <dt>Transparency block</dt><dd>The recording + live-summarizing + analyzing layer. Source of all inspector data and all failure reports.</dd>
+    <dt>Security cycle</dt><dd>Recurring checks: tool gatekeeping, drift detection with re-grounding reboots, and tiered human gates.</dd>
+    <dt>Evolver block</dt><dd>The scheduled pipeline that mutates structures, trials them on recorded real tasks, and promotes proven winners.</dd>
+    <dt>Connector / Gate</dt><dd>A standardized, permissioned adapter to anything outside: Docs, APIs, models, files.</dd>
+    <dt>Event bus / Bridge</dt><dd>The stream of JSON events describing everything the Engine does; the world's only source of truth.</dd>
+    <dt>Main / Testing / One-Time</dt><dd>The promoted permanent registry + live circuits; the sandboxed trial ground; the ephemeral job space.</dd>
+    <dt>Kill switch</dt><dd>One command: freeze all workers, close all gates, snapshot state. Yours alone.</dd>
+  </dl>
+
+  <div class="call" style="margin-top:40px"><span class="t">NEXT ACTIONS</span>
+  <p>1 · You read this and mark anything you want changed — the event contract and permission tiers especially, since everything else hangs off them. &nbsp;2 · We freeze the contract. &nbsp;3 · Day 1 begins: Engine skeleton + event bus + the world listening. &nbsp;4 · In parallel I draft the upgraded world: the globe shell, the refined geometry, the pretty mode.</p></div>
+</section>
+
+</div>
+</body>
+</html>

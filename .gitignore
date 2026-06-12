@@ -1,0 +1,11 @@
+node_modules/
+dist/
+world/dist/
+release/
+*.log
+.DS_Store
+.vite/
+/state/
+/workspaces/
+/vault/
+.env

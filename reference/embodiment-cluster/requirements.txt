@@ -1,0 +1,8 @@
+# Embodiment Cluster — dependencies
+# Core (live control):
+anthropic>=0.40.0
+mss>=9.0.1
+Pillow>=10.0.0
+pyautogui>=0.9.54
+pynput>=1.7.6
+# The dry-run test (test_dryrun.py) needs NONE of these — it runs on stdlib only.

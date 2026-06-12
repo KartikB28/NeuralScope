@@ -1,0 +1,37 @@
+name: Release installers
+
+# Tag a version to ship downloadable apps for every OS:
+#   git tag v0.1.0 && git push origin v0.1.0
+# Installers (Windows .exe, macOS .dmg, Linux .AppImage/.deb) are built on
+# real OS runners and attached to the GitHub Release automatically.
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+          - os: macos-latest
+          - os: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run smoke
+      - name: Build and publish installers
+        run: npx electron-builder --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

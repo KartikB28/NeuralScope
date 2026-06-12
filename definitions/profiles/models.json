@@ -1,0 +1,44 @@
+{
+  "planner": {
+    "prefer": ["anthropic", "ollama", "demo"],
+    "ollamaHint": ["llama3.1", "llama3", "qwen2.5", "qwen", "mistral"],
+    "temperature": 0.2,
+    "maxTokens": 4096
+  },
+  "researcher": {
+    "prefer": ["ollama", "anthropic", "demo"],
+    "ollamaHint": ["llama3.2", "llama3", "qwen2.5", "gemma", "mistral"],
+    "temperature": 0.4,
+    "maxTokens": 2048
+  },
+  "writer": {
+    "prefer": ["ollama", "anthropic", "demo"],
+    "ollamaHint": ["llama3.1", "llama3", "qwen2.5", "gemma"],
+    "temperature": 0.6,
+    "maxTokens": 3072
+  },
+  "coder": {
+    "prefer": ["ollama", "anthropic", "demo"],
+    "ollamaHint": ["qwen2.5-coder", "codellama", "deepseek-coder", "llama3.1", "llama3"],
+    "temperature": 0.2,
+    "maxTokens": 8192
+  },
+  "validator": {
+    "prefer": ["ollama", "anthropic", "demo"],
+    "ollamaHint": ["llama3.2", "llama3", "qwen2.5"],
+    "temperature": 0.1,
+    "maxTokens": 2048
+  },
+  "evolver-mutate": {
+    "prefer": ["anthropic", "ollama", "demo"],
+    "ollamaHint": ["llama3.1", "qwen2.5", "llama3"],
+    "temperature": 0.5,
+    "maxTokens": 8192
+  },
+  "summarizer": {
+    "prefer": ["ollama", "demo"],
+    "ollamaHint": ["llama3.2", "gemma", "qwen2.5"],
+    "temperature": 0.3,
+    "maxTokens": 1024
+  }
+}
