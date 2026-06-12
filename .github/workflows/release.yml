@@ -4,10 +4,14 @@ name: Release installers
 #   git tag v0.1.0 && git push origin v0.1.0
 # Installers (Windows .exe, macOS .dmg, Linux .AppImage/.deb) are built on
 # real OS runners and attached to the GitHub Release automatically.
+# Also dispatchable by hand (Actions tab → Release installers → Run workflow):
+# untagged runs attach the installers to a DRAFT release named after the
+# version in package.json — review it and click Publish.
 
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
 
 permissions:
   contents: write
