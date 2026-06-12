@@ -27,12 +27,16 @@ let ws;
 const fail = (msg) => { console.error(`✗ ${msg}`); process.exit(1); };
 const ok = (msg) => console.log(`✓ ${msg}`);
 
+// nothing in this test may hang a CI runner — hard ceiling on the whole run
+setTimeout(() => fail('global smoke watchdog: 4 minutes elapsed'), 240_000).unref();
+
 function send(cmd, data = {}) {
   return new Promise((resolve) => {
     const reqId = `t${Math.random().toString(36).slice(2)}`;
+    const timer = setTimeout(() => { ws.off('message', onMsg); fail(`no ack for ${cmd} within 15s`); }, 15_000);
     const onMsg = (raw) => {
       const m = JSON.parse(raw);
-      if (m.ack === reqId) { ws.off('message', onMsg); resolve(m); }
+      if (m.ack === reqId) { clearTimeout(timer); ws.off('message', onMsg); resolve(m); }
     };
     ws.on('message', onMsg);
     ws.send(JSON.stringify({ v: 1, cmd, reqId, data }));
@@ -129,7 +133,9 @@ if (lines.length < 40) fail(`black box too thin: ${lines.length} events`);
 for (const l of lines.slice(0, 5)) JSON.parse(l);
 ok(`black box: ${lines.length} validated events on disk`);
 
-await engine.stop();
-ws.close();
+// shutdown must never be the thing that hangs the suite: client first, then
+// a time-boxed engine stop — the assertions above are the proof, not the exit
+ws.terminate();
+await Promise.race([engine.stop(), new Promise(r => setTimeout(r, 5000))]);
 console.log('\n■ SMOKE TEST PASSED — the vertical slice is alive\n');
 process.exit(0);

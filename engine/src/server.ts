@@ -60,8 +60,14 @@ export async function startServer(tower: Tower, worldDist: string, preferredPort
     port,
     close: async () => {
       unsubscribe();
+      // upgraded sockets don't reliably count toward server.close() — drop
+      // them explicitly or shutdown can hang (CI runners, app quit)
+      for (const client of wss.clients) client.terminate();
       wss.close();
-      await new Promise<void>(r => server.close(() => r()));
+      await new Promise<void>(r => {
+        server.close(() => r());
+        server.closeAllConnections?.();
+      });
     },
   };
 }
