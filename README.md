@@ -14,6 +14,16 @@ thread on screen is a real, running thing.
 *Live capture: three completed circuits, the green Evolver, and the ticker reading
 "★ EVOLVED: skill:frontend → v2" — the system improving itself on real evidence.*
 
+### 📖 Manuals
+
+| Guide | For |
+|---|---|
+| **[Download & Install Guide](docs/DOWNLOAD-GUIDE.md)** | getting it onto Windows / Mac / Linux in two minutes |
+| **[Operating Manual](docs/OPERATING-MANUAL.md)** | driving the app, panel by panel, action by action |
+| **[Features Manual](docs/FEATURES.md)** | everything it can do, honestly scoped |
+| **[The Eight Systems](docs/eight-systems.md)** | the engineering detail and how each is proven |
+| **[Security Model](SECURITY.md)** | tiers, rings, the kill switch, and honest limits |
+
 ---
 
 ## Download & run (the easy way)
