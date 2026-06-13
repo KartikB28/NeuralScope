@@ -20,17 +20,17 @@ export class FilesystemConnector implements Connector {
   async health(): Promise<ConnectorHealth> { return { ok: true }; }
 
   /** Resolve a model-supplied relative path safely inside the workspace.
-   *  Rejects absolute paths, drive letters and any `..` escape. */
+   *  The real guard is containment: resolve against the workspace and confirm
+   *  the result stays inside it — that defeats `..`, absolute paths and odd
+   *  separators alike. The early rejects are fast, clear fences before it. */
   resolveSafe(workspace: string, rel: unknown): string | null {
     if (typeof rel !== 'string' || rel.length === 0 || rel.length > 512) return null;
+    if (rel.includes('\0')) return null;                       // null-byte truncation
     if (path.isAbsolute(rel) || /^[a-zA-Z]:[\\/]/.test(rel)) return null;
     const cleaned = rel.replace(/\\/g, '/');
-    if (cleaned.split('/').some(part => part === '..' || part === '')) {
-      if (cleaned.includes('..')) return null;
-    }
-    const abs = path.resolve(workspace, cleaned);
-    const wsResolved = path.resolve(workspace) + path.sep;
-    if (!abs.startsWith(wsResolved) && abs !== path.resolve(workspace)) return null;
+    const root = path.resolve(workspace);
+    const abs = path.resolve(root, cleaned);
+    if (abs !== root && !abs.startsWith(root + path.sep)) return null;  // containment
     return abs;
   }
 
